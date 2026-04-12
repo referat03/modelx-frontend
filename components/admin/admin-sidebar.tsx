@@ -13,6 +13,7 @@ import {
   BarChart3,
   Shield,
   LogOut,
+  Tag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
@@ -42,6 +43,11 @@ const navItems = [
     title: "Платежи",
     href: "/admin/payments",
     icon: CreditCard,
+  },
+  {
+    title: "Тарифы",
+    href: "/admin/pricing",
+    icon: Tag,
   },
   {
     title: "Аналитика",

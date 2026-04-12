@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/contexts/auth-context'
+import { CosmicBackground } from '@/components/cosmic-background'
 import './globals.css'
 
 const inter = Inter({ 
@@ -45,9 +46,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className="dark">
-      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans antialiased bg-background`}>
         <AuthProvider>
-          {children}
+          <CosmicBackground />
+          <div className="relative z-10">
+            {children}
+          </div>
           <Toaster 
             theme="dark" 
             position="top-right"

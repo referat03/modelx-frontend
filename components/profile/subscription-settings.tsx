@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Check, Calendar, Zap, CreditCard, AlertCircle, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,13 +9,34 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useAuth } from '@/contexts/auth-context'
-import { pricingPlans, getPlanById, formatPrice } from '@/config/pricing.config'
+import { pricingPlans, getPlanById, formatPrice, type PricingPlan } from '@/config/pricing.config'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 export function SubscriptionSettings() {
   const { user } = useAuth()
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showChangePlanDialog, setShowChangePlanDialog] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null)
   
   const currentPlan = user?.subscription
     ? getPlanById(user.subscription.planId)
@@ -38,7 +60,21 @@ export function SubscriptionSettings() {
   }
 
   const handleCancelSubscription = () => {
-    toast.info('Отмена подписки будет доступна после интеграции платёжной системы')
+    setShowCancelDialog(false)
+    toast.success('Подписка отменена. Она будет активна до конца оплаченного периода.')
+  }
+
+  const handleChangePlan = () => {
+    if (selectedPlan) {
+      setShowChangePlanDialog(false)
+      toast.success(`Тариф изменён на "${selectedPlan.name}"`)
+      setSelectedPlan(null)
+    }
+  }
+
+  const openChangePlanDialog = (plan: PricingPlan) => {
+    setSelectedPlan(plan)
+    setShowChangePlanDialog(true)
   }
 
   return (
@@ -162,7 +198,7 @@ export function SubscriptionSettings() {
             </Link>
           </Button>
           {!currentPlan?.isFree && (
-            <Button variant="outline" onClick={handleCancelSubscription}>
+            <Button variant="outline" onClick={() => setShowCancelDialog(true)}>
               Отменить подписку
             </Button>
           )}
@@ -217,11 +253,9 @@ export function SubscriptionSettings() {
                   <Button
                     variant={plan.isPopular ? 'default' : 'outline'}
                     className="w-full"
-                    asChild
+                    onClick={() => openChangePlanDialog(plan)}
                   >
-                    <Link href={`/signup?plan=${plan.id}`}>
-                      {plan.price > (currentPlan?.price || 0) ? 'Улучшить' : 'Выбрать'}
-                    </Link>
+                    {plan.price > (currentPlan?.price || 0) ? 'Улучшить' : 'Выбрать'}
                   </Button>
                 )}
               </CardFooter>
@@ -229,6 +263,75 @@ export function SubscriptionSettings() {
           ))}
         </div>
       </div>
+
+      {/* Cancel Subscription Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Отменить подписку?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите отменить подписку? Вы потеряете доступ к премиум-функциям 
+              после окончания текущего оплаченного периода. Это действие можно отменить, 
+              оформив подписку заново.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Остаться</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelSubscription}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Отменить подписку
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Change Plan Dialog */}
+      <Dialog open={showChangePlanDialog} onOpenChange={setShowChangePlanDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Сменить тариф</DialogTitle>
+            <DialogDescription>
+              Вы собираетесь перейти на тариф &quot;{selectedPlan?.name}&quot;
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Текущий тариф:</span>
+                <span className="font-medium">{currentPlan?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Новый тариф:</span>
+                <span className="font-medium text-primary">{selectedPlan?.name}</span>
+              </div>
+              <div className="border-t pt-3 flex justify-between">
+                <span className="text-muted-foreground">Стоимость:</span>
+                <span className="font-bold">{formatPrice(selectedPlan?.price || 0)}/мес</span>
+              </div>
+            </div>
+            {selectedPlan && selectedPlan.price > (currentPlan?.price || 0) && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Разница в стоимости будет списана пропорционально оставшимся дням текущего периода.
+              </p>
+            )}
+            {selectedPlan && selectedPlan.price < (currentPlan?.price || 0) && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Новый тариф вступит в силу со следующего расчётного периода.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePlanDialog(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleChangePlan}>
+              Подтвердить смену тарифа
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

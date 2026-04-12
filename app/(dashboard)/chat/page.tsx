@@ -291,13 +291,24 @@ function ChatContent() {
             </Button>
 
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Выберите модель" />
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Выберите модель">
+                  {currentModel && (
+                    <span className="flex items-center gap-2">
+                      <span>{currentModel.emoji}</span>
+                      <span>{currentModel.name}</span>
+                    </span>
+                  )}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {availableModels.map(model => (
                   <SelectItem key={model.id} value={model.id}>
-                    {model.name}
+                    <span className="flex items-center gap-2">
+                      <span>{model.emoji}</span>
+                      <span>{model.name}</span>
+                      <span className="text-xs text-muted-foreground">({model.provider})</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

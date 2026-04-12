@@ -63,9 +63,9 @@ export function Header() {
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/login">Войти</Link>
+                <Link href="/login">Вход</Link>
               </Button>
-              <Button size="sm" asChild>
+              <Button size="sm" className="bg-primary" asChild>
                 <Link href="/signup">Регистрация</Link>
               </Button>
             </>
@@ -125,10 +125,10 @@ export function Header() {
                   <>
                     <Button variant="ghost" size="sm" asChild>
                       <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                        Войти
+                        Вход
                       </Link>
                     </Button>
-                    <Button size="sm" asChild>
+                    <Button size="sm" className="bg-primary" asChild>
                       <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
                         Регистрация
                       </Link>

@@ -43,24 +43,9 @@ const values = [
 
 const team = [
   {
-    name: "Алексей Петров",
+    name: "Игорь Масловский",
     role: "CEO & Основатель",
-    bio: "10+ лет опыта в AI и машинном обучении",
-  },
-  {
-    name: "Мария Иванова",
-    role: "CTO",
-    bio: "Бывший инженер Google и Яндекс",
-  },
-  {
-    name: "Дмитрий Сидоров",
-    role: "Head of Product",
-    bio: "Создает продукты, которые любят пользователи",
-  },
-  {
-    name: "Елена Козлова",
-    role: "Head of Design",
-    bio: "Превращает сложные интерфейсы в простые",
+    bio: "Создатель ModelX, визионер в области AI",
   },
 ]
 
@@ -138,18 +123,18 @@ export default function AboutPage() {
             <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
               Люди, которые делают ModelX возможным
             </p>
-            <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-12 flex justify-center">
               {team.map((member) => (
-                <Card key={member.name} className="border-border bg-card text-center">
+                <Card key={member.name} className="border-border bg-card text-center max-w-sm">
                   <CardContent className="pt-6">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-2xl font-bold text-primary">
+                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 text-3xl font-bold text-primary">
                       {member.name.split(" ").map((n) => n[0]).join("")}
                     </div>
-                    <h3 className="mt-4 font-semibold text-foreground">
+                    <h3 className="mt-4 text-xl font-semibold text-foreground">
                       {member.name}
                     </h3>
                     <p className="text-sm text-primary">{member.role}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-muted-foreground">
                       {member.bio}
                     </p>
                   </CardContent>

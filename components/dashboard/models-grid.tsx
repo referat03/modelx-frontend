@@ -64,8 +64,8 @@ export function ModelsGrid() {
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <Icon className="h-5 w-5 text-primary" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-2xl">
+                        {model.emoji}
                       </div>
                       <Badge
                         variant={model.isAvailable ? 'default' : 'secondary'}
@@ -78,6 +78,7 @@ export function ModelsGrid() {
                     <CardDescription className="line-clamp-2">
                       {model.description}
                     </CardDescription>
+                    <p className="text-xs text-muted-foreground mt-1">{model.provider}</p>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-1">
