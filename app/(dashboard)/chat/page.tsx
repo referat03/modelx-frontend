@@ -253,14 +253,59 @@ function ChatContent() {
     <div className="relative flex h-screen flex-col">
       <CosmicBackground />
       
-      {/* Minimal Logo Header */}
-      <div className="relative z-10 shrink-0 border-b border-border/30 bg-background/30 backdrop-blur-sm px-3 py-3">
-        <Link href="/dashboard" className="flex w-fit items-center gap-2">
+      {/* Top Bar: Logo + controls */}
+      <div className="relative z-10 flex shrink-0 items-center gap-3 border-b border-border/30 bg-background/30 px-3 py-2 backdrop-blur-sm">
+        {/* Logo */}
+        <Link href="/dashboard" className="flex shrink-0 items-center gap-2 pr-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="text-sm font-bold tracking-tight">ModelX</span>
         </Link>
+
+        {/* Sidebar toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="hidden shrink-0 md:flex"
+        >
+          {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
+        </Button>
+
+        {/* Model selector */}
+        <Select value={selectedModel} onValueChange={setSelectedModel}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Выберите модель">
+              {currentModel && (
+                <span className="flex items-center gap-2">
+                  <span>{currentModel.emoji}</span>
+                  <span>{currentModel.name}</span>
+                </span>
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {availableModels.map(model => (
+              <SelectItem key={model.id} value={model.id}>
+                <span className="flex items-center gap-2">
+                  <span>{model.emoji}</span>
+                  <span>{model.name}</span>
+                  <span className="text-xs text-muted-foreground">({model.provider})</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* New chat button */}
+        <Button variant="outline" size="sm" onClick={handleNewChat} className="shrink-0">
+          <Plus className="mr-2 h-4 w-4" />
+          <span className="hidden sm:inline">Новый чат</span>
+        </Button>
       </div>
 
       <div className="relative flex flex-1 overflow-hidden">
@@ -293,61 +338,6 @@ function ChatContent() {
 
         {/* Main Chat Area */}
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Chat Header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="hidden md:flex"
-              >
-                {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
-              </Button>
-
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Выберите модель">
-                    {currentModel && (
-                      <span className="flex items-center gap-2">
-                        <span>{currentModel.emoji}</span>
-                        <span>{currentModel.name}</span>
-                      </span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {availableModels.map(model => (
-                    <SelectItem key={model.id} value={model.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{model.emoji}</span>
-                        <span>{model.name}</span>
-                        <span className="text-xs text-muted-foreground">({model.provider})</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {currentModel && (
-                <span className="hidden text-sm text-muted-foreground lg:inline">
-                  {currentModel.description}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleClearContext}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Очистить</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleNewChat}>
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Новый чат</span>
-              </Button>
-            </div>
-          </div>
-
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mx-auto max-w-3xl space-y-6">
@@ -356,7 +346,7 @@ function ChatContent() {
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <MessageSquare className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-medium">Начните ди����ог</h3>
+                <h3 className="text-lg font-medium">Начните диалог</h3>
                 <p className="mt-2 max-w-sm text-muted-foreground">
                   Выберите модель и напишите ваш первый запрос. ModelX ответит мгновенно.
                 </p>
@@ -524,7 +514,6 @@ function ChatContent() {
           </div>
         </div>
       </div>
-    </div>
     </div>
   )
 }
