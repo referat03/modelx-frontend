@@ -100,9 +100,12 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
                   const model = getModelById(chat.modelId)
                   
                   return (
-                    <motion.button
+                    <motion.div
                       key={chat.id}
                       onClick={() => onSelectChat(chat.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && onSelectChat(chat.id)}
                       className={cn(
                         'group flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors cursor-pointer',
                         chat.id === currentChatId
@@ -125,7 +128,7 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
-                    </motion.button>
+                    </motion.div>
                   )
                 })}
               </div>
