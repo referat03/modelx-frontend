@@ -10,7 +10,7 @@ import {
   Paperclip, 
   X, 
   Trash2,
-  ChevronDown,
+  MessageSquare,
   PanelLeftClose,
   PanelLeft,
   Plus
@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { ChatSidebar } from '@/components/chat/chat-sidebar'
+import { CosmicBackground } from '@/components/cosmic-background'
 import { useAuth } from '@/contexts/auth-context'
 import { 
   streamChatResponse, 
@@ -248,7 +249,8 @@ function ChatContent() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="relative flex h-[calc(100vh-4rem)]">
+      <CosmicBackground />
       {/* Sidebar */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -257,7 +259,7 @@ function ChatContent() {
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="hidden border-r border-border md:block"
+            className="relative z-10 hidden border-r border-border/50 bg-card/50 backdrop-blur-sm md:block"
           >
             <ChatSidebar 
               currentChatId={currentChat?.id}
@@ -277,7 +279,7 @@ function ChatContent() {
       </AnimatePresence>
 
       {/* Main Chat Area */}
-      <div className="flex flex-1 flex-col">
+      <div className="relative z-10 flex flex-1 flex-col">
         {/* Chat Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
@@ -339,7 +341,7 @@ function ChatContent() {
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <ChevronDown className="h-8 w-8 text-primary" />
+                  <MessageSquare className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-lg font-medium">Начните диалог</h3>
                 <p className="mt-2 max-w-sm text-muted-foreground">
@@ -437,7 +439,7 @@ function ChatContent() {
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t border-border p-4">
+        <div className="border-t border-border/50 bg-card/50 p-4 backdrop-blur-sm">
           <div className="mx-auto max-w-3xl">
             {/* Attachments Preview */}
             {attachments.length > 0 && (

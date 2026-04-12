@@ -255,7 +255,7 @@ export function ProfileSettings() {
       </Card>
 
       {/* Danger Zone */}
-      <Card className="border-destructive/50">
+      <Card className="border-rose-800/50">
         <CardHeader>
           <CardTitle className="text-destructive">Опасная зона</CardTitle>
           <CardDescription>
