@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -13,7 +14,8 @@ import {
   MessageSquare,
   PanelLeftClose,
   PanelLeft,
-  Plus
+  Plus,
+  Sparkles
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
@@ -248,39 +250,51 @@ function ChatContent() {
   }
 
   return (
-    <div className="relative flex h-[calc(100vh-4rem)]">
+    <div className="relative flex h-screen flex-col">
       <CosmicBackground />
-      {/* Sidebar */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-10 hidden h-full shrink-0 flex-col border-r border-border/50 bg-card/50 backdrop-blur-sm md:flex"
-          >
-            <ChatSidebar 
-              currentChatId={currentChat?.id}
-              onSelectChat={(chatId) => {
-                window.history.pushState({}, '', `/chat?id=${chatId}`)
-                const chat = getChat(chatId)
-                if (chat) {
-                  setCurrentChat(chat)
-                  setMessages(chat.messages)
-                  setSelectedModel(chat.modelId)
-                }
-              }}
-              onNewChat={handleNewChat}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
+      {/* Minimal Logo Header */}
+      <div className="relative z-10 shrink-0 border-b border-border/30 bg-background/30 backdrop-blur-sm px-3 py-3">
+        <Link href="/dashboard" className="flex w-fit items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+            <Sparkles className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <span className="text-sm font-bold tracking-tight">ModelX</span>
+        </Link>
+      </div>
 
-      {/* Main Chat Area */}
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Chat Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 280, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="relative z-10 hidden h-full shrink-0 flex-col border-r border-border/50 bg-card/50 backdrop-blur-sm md:flex"
+            >
+              <ChatSidebar 
+                currentChatId={currentChat?.id}
+                onSelectChat={(chatId) => {
+                  window.history.pushState({}, '', `/chat?id=${chatId}`)
+                  const chat = getChat(chatId)
+                  if (chat) {
+                    setCurrentChat(chat)
+                    setMessages(chat.messages)
+                    setSelectedModel(chat.modelId)
+                  }
+                }}
+                onNewChat={handleNewChat}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Chat Area */}
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Chat Header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

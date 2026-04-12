@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { Spinner } from '@/components/ui/spinner'
@@ -12,7 +12,10 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { isAuthenticated, isLoading } = useAuth()
+  
+  const isChat = pathname === '/chat'
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -34,8 +37,8 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
-      <main className="pb-8 pt-16">{children}</main>
+      {!isChat && <DashboardHeader />}
+      <main className={isChat ? '' : 'pb-8 pt-16'}>{children}</main>
     </div>
   )
 }
