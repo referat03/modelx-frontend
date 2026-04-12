@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Plus, MessageSquare, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { getChats, deleteChat, type Chat } from '@/services/ai.service'
 import { getModelById } from '@/config/models.config'
 import { cn } from '@/lib/utils'
@@ -68,7 +67,7 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-border p-4">
+      <div className="shrink-0 border-b border-border p-4">
         <Button onClick={onNewChat} className="w-full">
           <Plus className="mr-2 h-4 w-4" />
           Новый чат
@@ -76,7 +75,7 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
       </div>
 
       {/* Search */}
-      <div className="p-4">
+      <div className="shrink-0 p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -89,7 +88,7 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
       </div>
 
       {/* Chats List */}
-      <ScrollArea className="flex-1 px-2">
+      <div className="flex-1 overflow-y-auto px-2">
         {Object.keys(groupedChats).length > 0 ? (
           Object.entries(groupedChats).map(([dateKey, dateChats]) => (
             <div key={dateKey} className="mb-4">
@@ -140,7 +139,7 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
             </p>
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   )
 }
