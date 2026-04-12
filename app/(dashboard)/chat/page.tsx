@@ -356,7 +356,7 @@ function ChatContent() {
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <MessageSquare className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-lg font-medium">Начните диа��ог</h3>
+                <h3 className="text-lg font-medium">Начните ди����ог</h3>
                 <p className="mt-2 max-w-sm text-muted-foreground">
                   Выберите модель и напишите ваш первый запрос. ModelX ответит мгновенно.
                 </p>
@@ -524,6 +524,7 @@ function ChatContent() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   )
 }
