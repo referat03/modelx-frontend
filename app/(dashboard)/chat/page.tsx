@@ -295,58 +295,58 @@ function ChatContent() {
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Chat Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="hidden md:flex"
-            >
-              {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="hidden md:flex"
+              >
+                {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
+              </Button>
 
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Выберите модель">
-                  {currentModel && (
-                    <span className="flex items-center gap-2">
-                      <span>{currentModel.emoji}</span>
-                      <span>{currentModel.name}</span>
-                    </span>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {availableModels.map(model => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <span className="flex items-center gap-2">
-                      <span>{model.emoji}</span>
-                      <span>{model.name}</span>
-                      <span className="text-xs text-muted-foreground">({model.provider})</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Выберите модель">
+                    {currentModel && (
+                      <span className="flex items-center gap-2">
+                        <span>{currentModel.emoji}</span>
+                        <span>{currentModel.name}</span>
+                      </span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {availableModels.map(model => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{model.emoji}</span>
+                        <span>{model.name}</span>
+                        <span className="text-xs text-muted-foreground">({model.provider})</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {currentModel && (
-              <span className="hidden text-sm text-muted-foreground lg:inline">
-                {currentModel.description}
-              </span>
-            )}
+              {currentModel && (
+                <span className="hidden text-sm text-muted-foreground lg:inline">
+                  {currentModel.description}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={handleClearContext}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Очистить</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleNewChat}>
+                <Plus className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Новый чат</span>
+              </Button>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleClearContext}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Очистить</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleNewChat}>
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Новый чат</span>
-            </Button>
-          </div>
-        </div>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4">
@@ -520,9 +520,9 @@ function ChatContent() {
                   <Send className="h-5 w-5" />
                 </Button>
               )}
-            </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
