@@ -213,7 +213,7 @@ export async function generateVideo(
 const chatStorage: Map<string, Chat> = new Map()
 
 export function getChats(userId: string): Chat[] {
-  // Возвращаем все чаты пользователя (в демо - все чаты)
+  // Возвращаем все чаты пользователя (в ��емо - все чаты)
   return Array.from(chatStorage.values())
     .filter(() => true) // В реальном приложении фильтруем по userId
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
@@ -249,6 +249,10 @@ export function updateChat(chatId: string, updates: Partial<Chat>): Chat | undef
 
 export function deleteChat(chatId: string): boolean {
   return chatStorage.delete(chatId)
+}
+
+export function renameChat(chatId: string, newTitle: string): Chat | undefined {
+  return updateChat(chatId, { title: newTitle.trim() })
 }
 
 export function addMessage(chatId: string, message: Omit<Message, 'id' | 'timestamp'>): Message {

@@ -49,24 +49,23 @@ export function PricingSection() {
                   plan.isPopular && 'border-primary shadow-lg shadow-primary/20'
                 )}
               >
-                {plan.isPopular && (
-                  <div className="absolute right-4 top-4">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
-                      <Sparkles className="h-3 w-3" />
-                      Популярный
-                    </span>
-                  </div>
-                )}
-
                 <CardHeader>
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    {plan.isPopular && (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                        <Sparkles className="h-3 w-3" />
+                        Популярный
+                      </span>
+                    )}
+                  </div>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
 
                 <CardContent className="flex-1">
                   {/* Price */}
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold">
+                  <div className="mb-6 flex flex-wrap items-baseline gap-1">
+                    <span className="text-2xl font-bold sm:text-4xl">
                       {formatPrice(plan.price)}
                     </span>
                     {!plan.isFree && (

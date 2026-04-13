@@ -14,7 +14,8 @@ import {
   PanelLeftClose,
   PanelLeft,
   Plus,
-  Sparkles
+  Sparkles,
+  Menu
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
@@ -57,7 +58,10 @@ function ChatContent() {
   const [inputValue, setInputValue] = useState('')
   const [selectedModel, setSelectedModel] = useState(modelParam || 'gpt-4')
   const [isGenerating, setIsGenerating] = useState(false)
+  // Desktop sidebar open state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  // Mobile drawer open state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -89,6 +93,19 @@ function ChatContent() {
       setMessages([])
     }
   }, [chatIdParam, modelParam])
+
+  // Close mobile sidebar when clicking outside
+  useEffect(() => {
+    if (!isMobileSidebarOpen) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-mobile-sidebar]') && !target.closest('[data-burger]')) {
+        setIsMobileSidebarOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [isMobileSidebarOpen])
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() && attachments.length === 0) return
@@ -179,20 +196,73 @@ function ChatContent() {
     abortControllerRef.current?.abort()
   }
 
-  const handleRegenerate = async (messageId: string) => {
-    // Find the message to regenerate and all messages before it
+  const handleRegenerate = useCallback(async (messageId: string) => {
+    if (isGenerating) return
+
     const messageIndex = messages.findIndex(m => m.id === messageId)
     if (messageIndex === -1) return
 
-    // Remove the message and all after it
+    // Keep everything before this AI message
     const previousMessages = messages.slice(0, messageIndex)
     const lastUserMessage = [...previousMessages].reverse().find(m => m.role === 'user')
-    
     if (!lastUserMessage) return
 
+    // Remove AI message (and everything after) from state
     setMessages(previousMessages)
-    setInputValue(lastUserMessage.content)
-  }
+    setIsGenerating(true)
+
+    // Create new AI placeholder
+    const aiMessage: Message = {
+      id: `msg_${Date.now()}`,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      modelId: selectedModel,
+      isGenerating: true,
+    }
+    setMessages(prev => [...prev, aiMessage])
+
+    // Stream new response
+    try {
+      abortControllerRef.current = new AbortController()
+      let fullContent = ''
+
+      for await (const chunk of streamChatResponse(
+        selectedModel,
+        previousMessages,
+        abortControllerRef.current.signal
+      )) {
+        fullContent += chunk
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === aiMessage.id ? { ...msg, content: fullContent } : msg
+          )
+        )
+      }
+
+      const finalMessage = { ...aiMessage, content: fullContent, isGenerating: false }
+      if (currentChat) addMessage(currentChat.id, finalMessage)
+      setMessages(prev =>
+        prev.map(msg => (msg.id === aiMessage.id ? finalMessage : msg))
+      )
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === aiMessage.id
+              ? { ...msg, content: msg.content + '\n\n*[Генерация остановлена]*', isGenerating: false }
+              : msg
+          )
+        )
+      } else {
+        toast.error('Ошибка регенерации ответа')
+        setMessages(prev => prev.filter(msg => msg.id !== aiMessage.id))
+      }
+    } finally {
+      setIsGenerating(false)
+      abortControllerRef.current = null
+    }
+  }, [isGenerating, messages, selectedModel, currentChat])
 
   const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -232,29 +302,44 @@ function ChatContent() {
     }
   }
 
-  const handleClearContext = () => {
-    setMessages([])
-    if (currentChat) {
-      const newChat = createChat(selectedModel)
-      setCurrentChat(newChat)
-    }
-    toast.success('Контекст очищен')
-  }
-
   const handleNewChat = () => {
     const newChat = createChat(selectedModel)
     setCurrentChat(newChat)
     setMessages([])
     window.history.pushState({}, '', `/chat?model=${selectedModel}`)
+    setIsMobileSidebarOpen(false)
+  }
+
+  const handleSelectChat = (chatId: string) => {
+    window.history.pushState({}, '', `/chat?id=${chatId}`)
+    const chat = getChat(chatId)
+    if (chat) {
+      setCurrentChat(chat)
+      setMessages(chat.messages)
+      setSelectedModel(chat.modelId)
+    }
+    setIsMobileSidebarOpen(false)
   }
 
   return (
-    <div className="relative flex h-screen flex-col">
+    <div className="relative flex h-screen flex-col overflow-hidden">
       <CosmicBackground />
       
-      {/* Верхняя панель: логотип + управление */}
-      <div className="relative z-10 flex shrink-0 items-center gap-3 border-b border-border/30 bg-background/30 px-3 py-2 backdrop-blur-sm">
-        {/* Логотип */}
+      {/* Fixed top bar */}
+      <div className="relative z-20 flex shrink-0 items-center gap-3 border-b border-border/30 bg-background/60 px-3 py-2 backdrop-blur-md">
+        {/* Burger (mobile only) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          data-burger
+          onClick={() => setIsMobileSidebarOpen(prev => !prev)}
+          className="shrink-0 md:hidden cursor-pointer"
+          aria-label="Открыть список чатов"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Logo */}
         <Link href="/dashboard" className="flex shrink-0 items-center gap-2 pr-2 cursor-pointer">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
@@ -262,7 +347,7 @@ function ChatContent() {
           <span className="text-sm font-bold tracking-tight">ModelX</span>
         </Link>
 
-        {/* Кнопка скрытия/раскрытия сайдбара */}
+        {/* Desktop sidebar toggle */}
         <Button
           variant="ghost"
           size="icon"
@@ -272,14 +357,14 @@ function ChatContent() {
           {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
         </Button>
 
-        {/* Выбор модели */}
+        {/* Model select */}
         <Select value={selectedModel} onValueChange={setSelectedModel}>
-          <SelectTrigger className="w-[200px] cursor-pointer">
+          <SelectTrigger className="w-[160px] sm:w-[200px] cursor-pointer bg-primary/20 border-primary/30">
             <SelectValue placeholder="Выберите модель">
               {currentModel && (
                 <span className="flex items-center gap-2">
                   <span>{currentModel.emoji}</span>
-                  <span>{currentModel.name}</span>
+                  <span className="hidden sm:inline">{currentModel.name}</span>
                 </span>
               )}
             </SelectValue>
@@ -297,18 +382,49 @@ function ChatContent() {
           </SelectContent>
         </Select>
 
-        {/* Растягивающийся пробел */}
         <div className="flex-1" />
 
-        {/* Кнопка "Новый чат" */}
-        <Button variant="outline" size="sm" onClick={handleNewChat} className="shrink-0 !cursor-pointer">
-          <Plus className="mr-2 h-4 w-4" />
+        {/* New chat button */}
+        <Button variant="outline" size="sm" onClick={handleNewChat} className="shrink-0 cursor-pointer">
+          <Plus className="mr-1 h-4 w-4" />
           <span className="hidden sm:inline">Новый чат</span>
         </Button>
       </div>
 
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Сайдбар */}
+        {/* Mobile sidebar overlay */}
+        <AnimatePresence>
+          {isMobileSidebarOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-30 bg-black/50 md:hidden"
+                onClick={() => setIsMobileSidebarOpen(false)}
+              />
+              {/* Drawer */}
+              <motion.div
+                data-mobile-sidebar
+                initial={{ x: -280 }}
+                animate={{ x: 0 }}
+                exit={{ x: -280 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="fixed left-0 top-0 z-40 flex h-full w-[280px] flex-col border-r border-border/30 bg-card/95 backdrop-blur-md md:hidden"
+              >
+                <ChatSidebar
+                  currentChatId={currentChat?.id}
+                  onSelectChat={handleSelectChat}
+                  onNewChat={handleNewChat}
+                />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Desktop sidebar */}
         <AnimatePresence>
           {isSidebarOpen && (
             <motion.div
@@ -320,25 +436,17 @@ function ChatContent() {
             >
               <ChatSidebar 
                 currentChatId={currentChat?.id}
-                onSelectChat={(chatId) => {
-                  window.history.pushState({}, '', `/chat?id=${chatId}`)
-                  const chat = getChat(chatId)
-                  if (chat) {
-                    setCurrentChat(chat)
-                    setMessages(chat.messages)
-                    setSelectedModel(chat.modelId)
-                  }
-                }}
+                onSelectChat={handleSelectChat}
                 onNewChat={handleNewChat}
               />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Основная область чата */}
+        {/* Main chat area */}
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
-          {/* Область сообщений */}
-          <div className="flex-1 overflow-y-auto p-4">
+          {/* Messages area */}
+          <div className="scrollbar-hide flex-1 overflow-y-auto p-4">
             <div className="mx-auto max-w-3xl space-y-6">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -351,105 +459,109 @@ function ChatContent() {
                   </p>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      'flex gap-4',
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    )}
-                  >
-                    {message.role === 'assistant' && (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          AI
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    
-                    <div
+                messages.map((message) => {
+                  const msgModel = message.modelId ? getModelById(message.modelId) : currentModel
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                       className={cn(
-                        'max-w-[80%] rounded-2xl px-4 py-3',
-                        message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                        'flex gap-3',
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
                       )}
                     >
-                      {/* Attachments */}
-                      {message.attachments && message.attachments.length > 0 && (
-                        <div className="mb-2 flex flex-wrap gap-2">
-                          {message.attachments.map(att => (
-                            <div key={att.id} className="overflow-hidden rounded-lg border">
-                              {att.previewUrl ? (
-                                <img src={att.previewUrl} alt={att.name} className="h-20 w-20 object-cover" />
-                              ) : (
-                                <div className="flex h-10 items-center gap-2 px-3 text-xs">
-                                  <Paperclip className="h-3 w-3" />
-                                  {att.name}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                      {message.role === 'assistant' && (
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-base">
+                            {msgModel?.emoji || 'AI'}
+                          </AvatarFallback>
+                        </Avatar>
                       )}
+                      
+                      <div
+                        className={cn(
+                          'max-w-[80%] rounded-2xl px-4 py-3',
+                          message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        )}
+                      >
+                        {/* Attachments */}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            {message.attachments.map(att => (
+                              <div key={att.id} className="overflow-hidden rounded-lg border">
+                                {att.previewUrl ? (
+                                  <img src={att.previewUrl} alt={att.name} className="h-20 w-20 object-cover" />
+                                ) : (
+                                  <div className="flex h-10 items-center gap-2 px-3 text-xs">
+                                    <Paperclip className="h-3 w-3" />
+                                    {att.name}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
-                      {/* Content */}
-                      {message.role === 'assistant' ? (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-                            {message.content || ''}
-                          </ReactMarkdown>
-                          {message.isGenerating && (
-                            <span className="inline-flex items-center gap-1 text-primary">
-                              <Spinner className="h-3 w-3" />
-                              Генерация...
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        {/* Content */}
+                        {message.role === 'assistant' ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                              {message.content || ''}
+                            </ReactMarkdown>
+                            {message.isGenerating && (
+                              <span className="inline-flex items-center gap-1 text-primary">
+                                <Spinner className="h-3 w-3" />
+                                Генерация...
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        )}
+
+                        {/* Regenerate button */}
+                        {message.role === 'assistant' && !message.isGenerating && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2 h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => handleRegenerate(message.id)}
+                            disabled={isGenerating}
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            Регенерировать
+                          </Button>
+                        )}
+                      </div>
+
+                      {message.role === 'user' && (
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+                            {user?.name?.charAt(0).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
                       )}
-
-                      {/* Regenerate button */}
-                      {message.role === 'assistant' && !message.isGenerating && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
-                          onClick={() => handleRegenerate(message.id)}
-                        >
-                          <RefreshCw className="mr-1 h-3 w-3" />
-                          Регенерировать
-                        </Button>
-                      )}
-                    </div>
-
-                    {message.role === 'user' && (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                          {user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </motion.div>
-                ))
+                    </motion.div>
+                  )
+                })
               )}
               <div ref={messagesEndRef} />
             </div>
           </div>
 
-          {/* Поле ввода */}
-          <div className="shrink-0 border-t border-border/30 bg-card/50 p-4 backdrop-blur-sm">
+          {/* Input area */}
+          <div className="shrink-0 border-t border-border/30 bg-card/50 p-3 sm:p-4 backdrop-blur-sm">
             <div className="mx-auto max-w-3xl">
-              {/* Attachments Preview */}
+              {/* Attachments preview */}
               {attachments.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
                   {attachments.map(att => (
-                    <div key={att.id} className="relative overflow-hidden rounded-lg border bg-muted">
+                    <div key={att.id} className="relative rounded-lg border bg-muted" style={{ overflow: 'visible' }}>
                       {att.previewUrl ? (
-                        <img src={att.previewUrl} alt={att.name} className="h-16 w-16 object-cover" />
+                        <img src={att.previewUrl} alt={att.name} className="h-16 w-16 rounded-lg object-cover" />
                       ) : (
                         <div className="flex h-10 items-center gap-2 px-3 text-sm">
                           <Paperclip className="h-4 w-4" />
@@ -458,7 +570,7 @@ function ChatContent() {
                       )}
                       <button
                         onClick={() => removeAttachment(att.id)}
-                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                        className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -481,7 +593,7 @@ function ChatContent() {
                   size="icon"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isGenerating}
-                  className="!cursor-pointer"
+                  className="cursor-pointer"
                 >
                   <Paperclip className="h-5 w-5" />
                 </Button>
@@ -506,7 +618,7 @@ function ChatContent() {
                     size="icon"
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim() && attachments.length === 0}
-                    className="!cursor-pointer"
+                    className="cursor-pointer"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
