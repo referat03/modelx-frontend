@@ -46,9 +46,9 @@ export function SubscriptionPanel() {
       {/* Current Plan */}
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex flex-wrap items-center gap-2">
                 Текущий тариф: {currentPlan?.name}
                 {currentPlan?.isPopular && (
                   <Badge className="ml-2">Популярный</Badge>
@@ -56,12 +56,10 @@ export function SubscriptionPanel() {
               </CardTitle>
               <CardDescription>{currentPlan?.description}</CardDescription>
             </div>
-            <div className="text-right">
-              <p className="text-xl font-bold sm:text-2xl">
-                {formatPrice(currentPlan?.price || 0)}
-                {!currentPlan?.isFree && <span className="text-sm font-normal text-muted-foreground">/мес</span>}
-              </p>
-            </div>
+            <p className="shrink-0 text-xl font-bold sm:text-2xl sm:text-right">
+              {formatPrice(currentPlan?.price || 0)}
+              {!currentPlan?.isFree && <span className="text-sm font-normal text-muted-foreground">/мес</span>}
+            </p>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">

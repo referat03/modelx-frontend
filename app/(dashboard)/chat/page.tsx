@@ -359,7 +359,7 @@ function ChatContent() {
   }
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <CosmicBackground />
       
       {/* Fixed top bar */}
@@ -381,7 +381,7 @@ function ChatContent() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="hidden text-sm font-bold tracking-tight sm:inline">ModelX</span>
+          <span className="text-sm font-bold tracking-tight">ModelX</span>
         </Link>
 
         {/* Desktop sidebar toggle */}
@@ -396,12 +396,12 @@ function ChatContent() {
 
         {/* Model select — only emoji on mobile, full name on sm+ */}
         <Select value={selectedModel} onValueChange={setSelectedModel}>
-          <SelectTrigger className="w-[48px] cursor-pointer bg-primary/20 border-primary/30 sm:w-[200px]">
+          <SelectTrigger className="w-[120px] cursor-pointer bg-primary/20 border-primary/30 text-xs sm:w-[200px] sm:text-sm">
             <SelectValue placeholder="Выберите модель">
               {currentModel && (
-                <span className="flex items-center gap-2">
-                  <span>{currentModel.emoji}</span>
-                  <span className="hidden sm:inline">{currentModel.name}</span>
+                <span className="flex items-center gap-1.5 truncate">
+                  <span className="shrink-0">{currentModel.emoji}</span>
+                  <span className="truncate">{currentModel.name}</span>
                 </span>
               )}
             </SelectValue>
@@ -724,7 +724,7 @@ function ChatContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-dvh items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <Spinner className="h-8 w-8 text-primary" />
       </div>
     }>

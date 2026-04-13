@@ -36,9 +36,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={isChat ? 'flex h-dvh flex-col overflow-hidden bg-background' : 'min-h-screen bg-background'}>
       {!isChat && <DashboardHeader />}
-      <main className={isChat ? '' : 'pb-8 pt-16'}>{children}</main>
+      <main className={isChat ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'pb-8 pt-16'}>{children}</main>
     </div>
   )
 }

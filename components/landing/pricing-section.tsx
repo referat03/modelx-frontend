@@ -45,7 +45,7 @@ export function PricingSection() {
             >
               <Card
                 className={cn(
-                  'relative flex h-full flex-col overflow-hidden transition-all hover:shadow-lg hover:shadow-primary/10 cursor-pointer',
+                  'relative flex h-full flex-col transition-all hover:shadow-lg hover:shadow-primary/10 cursor-pointer',
                   plan.isPopular && 'border-primary shadow-lg shadow-primary/20'
                 )}
               >
@@ -53,7 +53,7 @@ export function PricingSection() {
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-xl">{plan.name}</CardTitle>
                     {plan.isPopular && (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
                         <Sparkles className="h-3 w-3" />
                         Популярный
                       </span>
