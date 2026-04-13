@@ -56,7 +56,7 @@ export function SubscriptionPanel() {
               </CardTitle>
               <CardDescription>{currentPlan?.description}</CardDescription>
             </div>
-            <p className="shrink-0 text-xl font-bold sm:text-2xl sm:text-right">
+            <p className="min-w-0 text-xl font-bold sm:shrink-0 sm:text-2xl sm:text-right">
               {formatPrice(currentPlan?.price || 0)}
               {!currentPlan?.isFree && <span className="text-sm font-normal text-muted-foreground">/мес</span>}
             </p>

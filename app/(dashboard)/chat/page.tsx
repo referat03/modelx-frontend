@@ -522,7 +522,7 @@ function ChatContent() {
                       
                       <div
                         className={cn(
-                          'max-w-[80%] min-w-0 rounded-2xl px-4 py-3',
+                          'max-w-[80%] min-w-0 overflow-x-hidden rounded-2xl px-4 py-3',
                           message.role === 'user'
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
@@ -567,7 +567,7 @@ function ChatContent() {
 
                         {/* Content — break-words prevents overflow on mobile */}
                         {message.role === 'assistant' ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_code]:break-all [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_p]:overflow-wrap-anywhere">
                             <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
                               {message.content || ''}
                             </ReactMarkdown>
@@ -579,7 +579,7 @@ function ChatContent() {
                             )}
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{message.content}</p>
                         )}
 
                         {/* Bottom bar: version navigation + regenerate */}

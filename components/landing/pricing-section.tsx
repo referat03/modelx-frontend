@@ -50,15 +50,15 @@ export function PricingSection() {
                 )}
               >
                 <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
-                    {plan.isPopular && (
-                      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                  {plan.isPopular && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
                         <Sparkles className="h-3 w-3" />
                         Популярный
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  <CardTitle className="text-xl">{plan.name}</CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
 
