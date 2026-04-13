@@ -199,11 +199,13 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
                           )}
                         </div>
 
-                        {/* Action buttons */}
+                        {/* Action buttons — always visible on touch devices, hover-reveal on pointer devices */}
                         <div
                           className={cn(
                             'flex shrink-0 items-center gap-0.5',
-                            isRenaming ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                            isRenaming
+                              ? 'opacity-100'
+                              : 'opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100'
                           )}
                           onClick={e => e.stopPropagation()}
                         >

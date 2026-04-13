@@ -15,7 +15,12 @@ import {
   PanelLeft,
   Plus,
   Sparkles,
-  Menu
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Download,
+  FileText,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
@@ -87,10 +92,10 @@ function ChatContent() {
         setSelectedModel(chat.modelId)
       }
     } else if (modelParam) {
-      // Create new chat with selected model
-      const newChat = createChat(modelParam)
-      setCurrentChat(newChat)
+      // New chat — do NOT create eagerly; create on first message send
+      setCurrentChat(null)
       setMessages([])
+      setSelectedModel(modelParam)
     }
   }, [chatIdParam, modelParam])
 
@@ -119,21 +124,20 @@ function ChatContent() {
       attachments: attachments.length > 0 ? [...attachments] : undefined,
     }
 
-    // Create chat if not exists
+    // Create chat on first message if not exists
     let chat = currentChat
     if (!chat) {
       chat = createChat(selectedModel)
       setCurrentChat(chat)
+      window.history.replaceState({}, '', `/chat?id=${chat.id}`)
     }
 
-    // Add user message
     addMessage(chat.id, userMessage)
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setAttachments([])
     setIsGenerating(true)
 
-    // Create placeholder for AI response
     const aiMessage: Message = {
       id: `msg_${Date.now() + 1}`,
       role: 'assistant',
@@ -141,10 +145,11 @@ function ChatContent() {
       timestamp: new Date(),
       modelId: selectedModel,
       isGenerating: true,
+      versions: [],
+      versionIndex: 0,
     }
     setMessages(prev => [...prev, aiMessage])
 
-    // Stream AI response
     try {
       abortControllerRef.current = new AbortController()
       let fullContent = ''
@@ -164,8 +169,13 @@ function ChatContent() {
         )
       }
 
-      // Finalize message
-      const finalMessage = { ...aiMessage, content: fullContent, isGenerating: false }
+      const finalMessage: Message = {
+        ...aiMessage,
+        content: fullContent,
+        isGenerating: false,
+        versions: [fullContent],
+        versionIndex: 0,
+      }
       addMessage(chat.id, finalMessage)
       setMessages(prev =>
         prev.map(msg =>
@@ -174,7 +184,6 @@ function ChatContent() {
       )
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        // User cancelled
         setMessages(prev =>
           prev.map(msg =>
             msg.id === aiMessage.id
@@ -207,22 +216,20 @@ function ChatContent() {
     const lastUserMessage = [...previousMessages].reverse().find(m => m.role === 'user')
     if (!lastUserMessage) return
 
-    // Remove AI message (and everything after) from state
-    setMessages(previousMessages)
+    const existingMessage = messages[messageIndex]
+    const existingVersions = existingMessage.versions ?? [existingMessage.content]
+
     setIsGenerating(true)
 
-    // Create new AI placeholder
-    const aiMessage: Message = {
-      id: `msg_${Date.now()}`,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      modelId: selectedModel,
-      isGenerating: true,
-    }
-    setMessages(prev => [...prev, aiMessage])
+    // Update the existing message to show as generating (keep versions list)
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, content: '', isGenerating: true }
+          : msg
+      )
+    )
 
-    // Stream new response
     try {
       abortControllerRef.current = new AbortController()
       let fullContent = ''
@@ -235,34 +242,65 @@ function ChatContent() {
         fullContent += chunk
         setMessages(prev =>
           prev.map(msg =>
-            msg.id === aiMessage.id ? { ...msg, content: fullContent } : msg
+            msg.id === messageId ? { ...msg, content: fullContent } : msg
           )
         )
       }
 
-      const finalMessage = { ...aiMessage, content: fullContent, isGenerating: false }
+      const newVersions = [...existingVersions, fullContent]
+      const newVersionIndex = newVersions.length - 1
+
+      const finalMessage: Message = {
+        ...existingMessage,
+        content: fullContent,
+        isGenerating: false,
+        versions: newVersions,
+        versionIndex: newVersionIndex,
+      }
+
       if (currentChat) addMessage(currentChat.id, finalMessage)
       setMessages(prev =>
-        prev.map(msg => (msg.id === aiMessage.id ? finalMessage : msg))
+        prev.map(msg => (msg.id === messageId ? finalMessage : msg))
       )
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         setMessages(prev =>
           prev.map(msg =>
-            msg.id === aiMessage.id
+            msg.id === messageId
               ? { ...msg, content: msg.content + '\n\n*[Генерация остановлена]*', isGenerating: false }
               : msg
           )
         )
       } else {
         toast.error('Ошибка регенерации ответа')
-        setMessages(prev => prev.filter(msg => msg.id !== aiMessage.id))
+        // Restore previous content on error
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === messageId
+              ? { ...existingMessage, isGenerating: false }
+              : msg
+          )
+        )
       }
     } finally {
       setIsGenerating(false)
       abortControllerRef.current = null
     }
   }, [isGenerating, messages, selectedModel, currentChat])
+
+  const handleVersionChange = useCallback((messageId: string, direction: 'prev' | 'next') => {
+    setMessages(prev =>
+      prev.map(msg => {
+        if (msg.id !== messageId || !msg.versions) return msg
+        const total = msg.versions.length
+        const current = msg.versionIndex ?? 0
+        const newIndex = direction === 'prev'
+          ? Math.max(0, current - 1)
+          : Math.min(total - 1, current + 1)
+        return { ...msg, versionIndex: newIndex, content: msg.versions[newIndex] }
+      })
+    )
+  }, [])
 
   const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -303,8 +341,7 @@ function ChatContent() {
   }
 
   const handleNewChat = () => {
-    const newChat = createChat(selectedModel)
-    setCurrentChat(newChat)
+    setCurrentChat(null)
     setMessages([])
     window.history.pushState({}, '', `/chat?model=${selectedModel}`)
     setIsMobileSidebarOpen(false)
@@ -322,7 +359,7 @@ function ChatContent() {
   }
 
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden">
+    <div className="relative flex h-dvh flex-col overflow-hidden">
       <CosmicBackground />
       
       {/* Fixed top bar */}
@@ -344,7 +381,7 @@ function ChatContent() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-sm font-bold tracking-tight">ModelX</span>
+          <span className="hidden text-sm font-bold tracking-tight sm:inline">ModelX</span>
         </Link>
 
         {/* Desktop sidebar toggle */}
@@ -357,9 +394,9 @@ function ChatContent() {
           {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
         </Button>
 
-        {/* Model select */}
+        {/* Model select — only emoji on mobile, full name on sm+ */}
         <Select value={selectedModel} onValueChange={setSelectedModel}>
-          <SelectTrigger className="w-[160px] sm:w-[200px] cursor-pointer bg-primary/20 border-primary/30">
+          <SelectTrigger className="w-[48px] cursor-pointer bg-primary/20 border-primary/30 sm:w-[200px]">
             <SelectValue placeholder="Выберите модель">
               {currentModel && (
                 <span className="flex items-center gap-2">
@@ -386,12 +423,12 @@ function ChatContent() {
 
         {/* New chat button */}
         <Button variant="outline" size="sm" onClick={handleNewChat} className="shrink-0 cursor-pointer">
-          <Plus className="mr-1 h-4 w-4" />
+          <Plus className="h-4 w-4 sm:mr-1" />
           <span className="hidden sm:inline">Новый чат</span>
         </Button>
       </div>
 
-      <div className="relative flex flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {/* Mobile sidebar overlay */}
         <AnimatePresence>
           {isMobileSidebarOpen && (
@@ -461,6 +498,10 @@ function ChatContent() {
               ) : (
                 messages.map((message) => {
                   const msgModel = message.modelId ? getModelById(message.modelId) : currentModel
+                  const versions = message.versions
+                  const versionIndex = message.versionIndex ?? 0
+                  const hasVersions = versions && versions.length > 1
+
                   return (
                     <motion.div
                       key={message.id}
@@ -481,7 +522,7 @@ function ChatContent() {
                       
                       <div
                         className={cn(
-                          'max-w-[80%] rounded-2xl px-4 py-3',
+                          'max-w-[80%] min-w-0 rounded-2xl px-4 py-3',
                           message.role === 'user'
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
@@ -493,21 +534,40 @@ function ChatContent() {
                             {message.attachments.map(att => (
                               <div key={att.id} className="overflow-hidden rounded-lg border">
                                 {att.previewUrl ? (
-                                  <img src={att.previewUrl} alt={att.name} className="h-20 w-20 object-cover" />
+                                  <a
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={att.name}
+                                    className="block cursor-pointer"
+                                  >
+                                    <img
+                                      src={att.previewUrl}
+                                      alt={att.name}
+                                      className="h-20 w-20 object-cover transition-opacity hover:opacity-80"
+                                    />
+                                  </a>
                                 ) : (
-                                  <div className="flex h-10 items-center gap-2 px-3 text-xs">
-                                    <Paperclip className="h-3 w-3" />
-                                    {att.name}
-                                  </div>
+                                  <a
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download={att.name}
+                                    className="flex h-10 items-center gap-2 px-3 text-xs hover:bg-muted/50"
+                                  >
+                                    <FileText className="h-3 w-3 shrink-0" />
+                                    <span className="max-w-[100px] truncate">{att.name}</span>
+                                    <Download className="h-3 w-3 shrink-0 opacity-60" />
+                                  </a>
                                 )}
                               </div>
                             ))}
                           </div>
                         )}
 
-                        {/* Content */}
+                        {/* Content — break-words prevents overflow on mobile */}
                         {message.role === 'assistant' ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                             <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
                               {message.content || ''}
                             </ReactMarkdown>
@@ -519,21 +579,50 @@ function ChatContent() {
                             )}
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         )}
 
-                        {/* Regenerate button */}
+                        {/* Bottom bar: version navigation + regenerate */}
                         {message.role === 'assistant' && !message.isGenerating && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="mt-2 h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
-                            onClick={() => handleRegenerate(message.id)}
-                            disabled={isGenerating}
-                          >
-                            <RefreshCw className="mr-1 h-3 w-3" />
-                            Регенерировать
-                          </Button>
+                          <div className="mt-2 flex items-center gap-1">
+                            {hasVersions && (
+                              <div className="flex items-center gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleVersionChange(message.id, 'prev')}
+                                  disabled={versionIndex === 0}
+                                  aria-label="Предыдущая версия"
+                                >
+                                  <ChevronLeft className="h-3 w-3" />
+                                </Button>
+                                <span className="min-w-[2.5rem] text-center text-xs text-muted-foreground">
+                                  {versionIndex + 1}/{versions!.length}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleVersionChange(message.id, 'next')}
+                                  disabled={versionIndex === versions!.length - 1}
+                                  aria-label="Следующая версия"
+                                >
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={() => handleRegenerate(message.id)}
+                              disabled={isGenerating}
+                            >
+                              <RefreshCw className="mr-1 h-3 w-3" />
+                              Регенерировать
+                            </Button>
+                          </div>
                         )}
                       </div>
 
@@ -635,7 +724,7 @@ function ChatContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+      <div className="flex h-dvh items-center justify-center">
         <Spinner className="h-8 w-8 text-primary" />
       </div>
     }>

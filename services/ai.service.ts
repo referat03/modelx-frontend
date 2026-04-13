@@ -16,6 +16,10 @@ export interface Message {
   modelId?: string
   attachments?: Attachment[]
   isGenerating?: boolean
+  /** All generated variants for this response position */
+  versions?: string[]
+  /** Index of the currently displayed version (0-based) */
+  versionIndex?: number
 }
 
 export interface Attachment {
@@ -81,11 +85,6 @@ function generateMockResponse(modelId: string): string {
 
 /**
  * Отправляет сообщение AI модели и возвращает поток ответа
- * 
- * TODO: Заменить на реальный API вызов:
- * - Для OpenAI: использовать openai SDK с streaming
- * - Для Claude: использовать @anthropic-ai/sdk
- * - Для Gemini: использовать @google/generative-ai
  */
 export async function* streamChatResponse(
   modelId: string,
@@ -110,7 +109,6 @@ export async function* streamChatResponse(
   
   // Посимвольная генерация для имитации потокового ответа
   for (let i = 0; i < words.length; i++) {
-    // Проверяем, не был ли запрос отменён
     if (_signal?.aborted) {
       return
     }
@@ -124,11 +122,6 @@ export async function* streamChatResponse(
 
 /**
  * Генерирует изображение по текстовому описанию
- * 
- * TODO: Интегрировать реальные API:
- * - DALL-E: openai.images.generate()
- * - Stable Diffusion: replicate API
- * - Midjourney: через Discord API или proxy
  */
 export async function generateImage(
   modelId: string,
@@ -141,10 +134,8 @@ export async function generateImage(
     throw new Error('Модель не поддерживает генерацию изображений')
   }
   
-  // Имитация времени генерации
   await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000))
   
-  // Возвращаем placeholder изображение
   return {
     type: 'image',
     content: prompt,
@@ -154,10 +145,6 @@ export async function generateImage(
 
 /**
  * Генерирует аудио (синтез речи или музыка)
- * 
- * TODO: Интегрировать реальные API:
- * - ElevenLabs: elevenlabs SDK
- * - Whisper: openai.audio.transcriptions
  */
 export async function generateAudio(
   modelId: string,
@@ -170,23 +157,17 @@ export async function generateAudio(
     throw new Error('Модель не поддерживает работу с аудио')
   }
   
-  // Имитация времени генерации
   await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000))
   
   return {
     type: 'audio',
     content: input,
-    // Placeholder аудио URL
     url: '/placeholder-audio.mp3',
   }
 }
 
 /**
  * Генерирует видео
- * 
- * TODO: Интегрировать реальные API:
- * - Runway: через их API
- * - Pika: через их API
  */
 export async function generateVideo(
   modelId: string,
@@ -199,7 +180,6 @@ export async function generateVideo(
     throw new Error('Модель не поддерживает генерацию видео')
   }
   
-  // Имитация времени генерации (видео генерируется долго)
   await new Promise(resolve => setTimeout(resolve, 5000 + Math.random() * 5000))
   
   return {
@@ -213,9 +193,8 @@ export async function generateVideo(
 const chatStorage: Map<string, Chat> = new Map()
 
 export function getChats(userId: string): Chat[] {
-  // Возвращаем все чаты пользователя (в ��емо - все чаты)
   return Array.from(chatStorage.values())
-    .filter(() => true) // В реальном приложении фильтруем по userId
+    .filter(() => true)
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
 }
 
