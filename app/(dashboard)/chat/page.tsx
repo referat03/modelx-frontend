@@ -359,7 +359,7 @@ function ChatContent() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none">
       <CosmicBackground />
       
       {/* Fixed top bar */}
@@ -483,7 +483,7 @@ function ChatContent() {
         {/* Main chat area */}
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Messages area */}
-          <div className="scrollbar-hide flex-1 overflow-y-auto p-4">
+          <div className="scrollbar-hide flex-1 overflow-y-auto overscroll-contain p-4">
             <div className="mx-auto max-w-3xl space-y-6">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
