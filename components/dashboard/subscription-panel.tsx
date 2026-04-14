@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 
 export function SubscriptionPanel() {
   const { user } = useAuth()
-  
+
   const currentPlan = user?.subscription
     ? getPlanById(user.subscription.planId)
     : getPlanById('free')
