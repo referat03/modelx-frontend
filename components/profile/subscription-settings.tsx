@@ -82,23 +82,11 @@ export function SubscriptionSettings() {
       {/* Current Plan Overview */}
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                {currentPlan?.name}
-                {currentPlan?.isPopular && <Badge>Популярный</Badge>}
-              </CardTitle>
-              <CardDescription className="mt-1">
-                {currentPlan?.description}
-              </CardDescription>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold">{formatPrice(currentPlan?.price || 0)}</p>
-              {!currentPlan?.isFree && (
-                <p className="text-sm text-muted-foreground">/месяц</p>
-              )}
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            {currentPlan?.name}
+            {currentPlan?.isPopular && <Badge>Популярный</Badge>}
+          </CardTitle>
+          <CardDescription>{currentPlan?.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Key Metrics */}
