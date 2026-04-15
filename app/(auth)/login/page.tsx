@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -25,8 +25,9 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, loginWithGoogle, loginWithTelegram, isLoading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
 
@@ -48,7 +49,8 @@ export default function LoginPage() {
     
     if (result.success) {
       toast.success('Добро пожаловать!')
-      router.push('/dashboard')
+      const redirect = searchParams.get('redirect')
+      router.push(redirect === '/buy-tokens' ? '/buy-tokens' : '/dashboard')
     } else {
       toast.error(result.error || 'Ошибка входа')
     }
@@ -210,5 +212,13 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Загрузка...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

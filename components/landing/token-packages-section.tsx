@@ -49,7 +49,7 @@ function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
 
       <CardFooter>
         <Button
-          className="w-full"
+          className="w-full cursor-pointer"
           variant={pkg.isPopular ? 'default' : 'outline'}
           onClick={() => onBuy(pkg)}
         >
@@ -98,11 +98,11 @@ export function TokenPackagesSection() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-5xl font-bold tracking-tight">
-            ИЛИ
+          <h2 className="text-3xl sm:text-4xl font-space font-bold tracking-tight">
+            Или
           </h2>
           <p className="mt-4 text-xl text-muted-foreground">
-            ПОЛУЧИТЕ ТОКЕНЫ ОТДЕЛЬНО
+            Получите токены отдельно
           </p>
         </motion.div>
 
@@ -122,7 +122,7 @@ export function TokenPackagesSection() {
         </div>
 
         {/* Mobile Carousel */}
-        <div className="mt-16 md:hidden">
+        <div className="mt-16 md:hidden overflow-hidden max-w-[100vw] overscroll-none">
           <Carousel
             opts={{
               align: 'start',

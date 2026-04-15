@@ -1,13 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { Coins, ExternalLink, History } from 'lucide-react'
+import { Coins, ExternalLink, History, Calendar, Zap, CreditCard, AlertCircle, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { useAuth } from '@/contexts/auth-context'
 import { formatTokensPrice } from '@/config/tokenPackages.config'
+import { getPlanById, formatPrice } from '@/config/pricing.config'
 
 // Моковая история покупок токенов
 const mockPurchaseHistory = [
@@ -40,6 +42,18 @@ const mockPurchaseHistory = [
 export function TokenBalanceSettings() {
   const { user } = useAuth()
 
+  const currentPlan = user?.subscription
+    ? getPlanById(user.subscription.planId)
+    : getPlanById('free')
+
+  const daysUntilExpiry = user?.subscription?.expiresAt
+    ? Math.ceil((new Date(user.subscription.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0
+
+  const usageStats = { requestsToday: 127 }
+  const requestLimit = currentPlan?.limits.requestsPerDay || 50
+  const usagePercentage = requestLimit === -1 ? 0 : Math.min((usageStats.requestsToday / requestLimit) * 100, 100)
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
       day: 'numeric',
@@ -50,6 +64,86 @@ export function TokenBalanceSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Current Plan (from Subscription tab) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {currentPlan?.name}
+            {currentPlan?.isPopular && <Badge>Популярный</Badge>}
+          </CardTitle>
+          <CardDescription>{currentPlan?.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span className="text-sm">Действует до</span>
+              </div>
+              <p className="mt-1 font-semibold">
+                {user?.subscription?.expiresAt
+                  ? new Intl.DateTimeFormat('ru-RU').format(new Date(user.subscription.expiresAt))
+                  : 'Бессрочно'}
+              </p>
+              {daysUntilExpiry > 0 && daysUntilExpiry <= 7 && (
+                <p className="mt-1 text-xs text-amber-500">Осталось {daysUntilExpiry} дней</p>
+              )}
+            </div>
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Zap className="h-4 w-4" />
+                <span className="text-sm">Запросов сегодня</span>
+              </div>
+              <p className="mt-1 font-semibold">
+                {usageStats.requestsToday} / {requestLimit === -1 ? '∞' : requestLimit}
+              </p>
+            </div>
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CreditCard className="h-4 w-4" />
+                <span className="text-sm">Следующий платёж</span>
+              </div>
+              <p className="mt-1 font-semibold">
+                {currentPlan?.isFree ? 'Не требуется' : formatPrice(currentPlan?.price || 0)}
+              </p>
+            </div>
+          </div>
+          {requestLimit !== -1 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Использование лимита</span>
+                <span className="font-medium">{Math.round(usagePercentage)}%</span>
+              </div>
+              <Progress value={usagePercentage} />
+              {usagePercentage >= 80 && (
+                <p className="flex items-center gap-1 text-sm text-amber-500">
+                  <AlertCircle className="h-4 w-4" />
+                  Лимит почти исчерпан
+                </p>
+              )}
+            </div>
+          )}
+          <div>
+            <h4 className="mb-3 font-medium">Включено:</h4>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {currentPlan?.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="text-sm">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button asChild>
+            <Link href="/#pricing">
+              Сменить тариф
+              <ExternalLink className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </CardFooter>
+      </Card>
       {/* Current Balance Card */}
       <Card>
         <CardHeader>

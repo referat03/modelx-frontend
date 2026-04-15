@@ -76,7 +76,8 @@ function SignupForm() {
     
     if (result.success) {
       toast.success('Email подтверждён! Добро пожаловать!')
-      router.push('/dashboard')
+      const redirect = searchParams.get('redirect')
+      router.push(redirect === '/buy-tokens' ? '/buy-tokens' : '/dashboard')
     } else {
       toast.error(result.error || 'Неверный код')
     }
