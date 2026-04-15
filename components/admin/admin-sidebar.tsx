@@ -14,6 +14,7 @@ import {
   Shield,
   LogOut,
   Tag,
+  Coins,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
@@ -48,6 +49,11 @@ const navItems = [
     title: "Тарифы",
     href: "/admin/pricing",
     icon: Tag,
+  },
+  {
+    title: "Токены",
+    href: "/admin/tokens",
+    icon: Coins,
   },
   {
     title: "Аналитика",

@@ -15,6 +15,7 @@ export interface User {
   avatarUrl?: string
   isEmailVerified: boolean
   createdAt: Date
+  tokenBalance: number
   subscription?: {
     planId: string
     expiresAt: Date
@@ -33,6 +34,7 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>
   resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
   updateProfile: (data: Partial<Pick<User, 'name' | 'email'>>) => Promise<{ success: boolean; error?: string }>
+  updateTokenBalance: (newBalance: number) => void
   loginWithGoogle: () => Promise<void>
   loginWithTelegram: () => Promise<void>
 }
@@ -48,6 +50,7 @@ const mockUsers: User[] = [
     role: 'admin',
     isEmailVerified: true,
     createdAt: new Date('2024-01-01'),
+    tokenBalance: 1500.0,
     subscription: {
       planId: 'pro',
       expiresAt: new Date('2025-12-31'),
@@ -61,6 +64,7 @@ const mockUsers: User[] = [
     role: 'user',
     isEmailVerified: true,
     createdAt: new Date('2024-06-01'),
+    tokenBalance: 370.5,
     subscription: {
       planId: 'starter',
       expiresAt: new Date('2025-06-01'),
@@ -156,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: 'user',
         isEmailVerified: true,
         createdAt: new Date(),
+        tokenBalance: 0.0,
         subscription: {
           planId: 'free',
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 дней
@@ -232,6 +237,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     alert('Telegram Login будет доступен после интеграции. Используйте email: admin@modelx.ru')
   }, [])
 
+  const updateTokenBalance = useCallback((newBalance: number) => {
+    if (!user) return
+    
+    const updatedUser = { ...user, tokenBalance: newBalance }
+    setUser(updatedUser)
+    localStorage.setItem('modelx_user', JSON.stringify(updatedUser))
+  }, [user])
+
   return (
     <AuthContext.Provider
       value={{
@@ -245,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         forgotPassword,
         resetPassword,
         updateProfile,
+        updateTokenBalance,
         loginWithGoogle,
         loginWithTelegram,
       }}

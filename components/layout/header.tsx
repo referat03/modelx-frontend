@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Sparkles } from 'lucide-react'
+import { Menu, X, Sparkles, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -53,6 +53,12 @@ export function Header() {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>
+              <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5">
+                <Coins className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  {(user?.tokenBalance ?? 0).toFixed(2)}
+                </span>
+              </div>
               <span className="text-sm text-muted-foreground">
                 {user?.name}
               </span>
@@ -107,9 +113,17 @@ export function Header() {
               <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
                 {isAuthenticated ? (
                   <>
-                    <span className="px-3 text-sm text-muted-foreground">
-                      {user?.name}
-                    </span>
+                    <div className="flex items-center justify-between px-3">
+                      <span className="text-sm text-muted-foreground">
+                        {user?.name}
+                      </span>
+                      <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1">
+                        <Coins className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-sm font-medium text-primary">
+                          {(user?.tokenBalance ?? 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
