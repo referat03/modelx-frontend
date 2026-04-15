@@ -98,7 +98,7 @@ export function TokenPackagesSection() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-lg sm:text-3xl md:text-4xl font-space font-bold tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-space font-bold tracking-tight">
             или
           </h2>
           <p className="mt-4 text-xl text-muted-foreground">
