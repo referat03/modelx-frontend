@@ -108,7 +108,7 @@ export function TokenPackagesSection() {
         </motion.div>
 
         {/* Desktop Grid */}
-        <div className="mt-16 hidden gap-8 md:grid md:grid-cols-3">
+        <div className="mt-10 hidden gap-8 md:grid md:grid-cols-3">
           {tokenPackages.map((pkg, index) => (
             <motion.div
               key={pkg.id}
@@ -123,7 +123,7 @@ export function TokenPackagesSection() {
         </div>
 
         {/* Mobile Carousel */}
-        <div className="mt-16 md:hidden overflow-hidden max-w-[100vw] overscroll-none">
+        <div className="mt-10 md:hidden overflow-hidden max-w-[100vw] overscroll-none">
           <Carousel
             opts={{
               align: 'start',
