@@ -3,11 +3,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '@/components/ui/carousel'
 import { tokenPackages, formatTokensPrice, type TokenPackage } from '@/config/tokenPackages.config'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
@@ -99,7 +98,7 @@ export function TokenPackagesSection() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-3xl sm:text-4xl font-space font-bold tracking-tight">
+          <h2 className="text-lg sm:text-3xl md:text-4xl font-space font-bold tracking-tight">
             или
           </h2>
           <p className="mt-4 text-xl text-muted-foreground">
@@ -122,29 +121,21 @@ export function TokenPackagesSection() {
           ))}
         </div>
 
-        {/* Mobile Carousel */}
-        <div className="mt-10 md:hidden overflow-hidden max-w-[100vw] overscroll-none">
-          <Carousel
-            opts={{
-              align: 'start',
-              loop: true,
-            }}
-            className="w-full"
+        {/* Mobile Snap Slider */}
+        <div className="mt-10 md:hidden">
+          <div
+            className="flex snap-x snap-mandatory overflow-x-auto gap-4 pb-4 px-[7.5%]"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <CarouselContent className="-ml-4">
-              {tokenPackages.map((pkg) => (
-                <CarouselItem key={pkg.id} className="pl-4 basis-[85%]">
-                  <TokenPackageCard pkg={pkg} onBuy={handleBuy} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2 h-10 w-10 rounded-full border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground">
-              <ChevronLeft className="h-5 w-5" />
-            </CarouselPrevious>
-            <CarouselNext className="right-2 h-10 w-10 rounded-full border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground">
-              <ChevronRight className="h-5 w-5" />
-            </CarouselNext>
-          </Carousel>
+            {tokenPackages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className="flex-none w-[85%] snap-center"
+              >
+                <TokenPackageCard pkg={pkg} onBuy={handleBuy} />
+              </div>
+            ))}
+          </div>
         </div>
         {/* FAQ Link */}
         <motion.div
@@ -152,7 +143,7 @@ export function TokenPackagesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-16 text-center"
+          className="mt-24 text-center"
         >
           <p className="text-muted-foreground">
             Есть вопросы?{' '}
