@@ -26,7 +26,7 @@ export function PricingSection() {
           className="text-center"
         >
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            выберите подходящий тариф
+            Выберите подходящий тариф
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Прозрачные цены, без скрытых комиссий. Отмена в любое время.

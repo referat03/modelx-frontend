@@ -100,7 +100,7 @@ export function TokenPackagesSection() {
           className="text-center"
         >
           <h2 className="text-3xl sm:text-4xl font-space font-bold tracking-tight">
-            Или
+            или
           </h2>
           <p className="mt-4 text-xl text-muted-foreground">
             Получите токены отдельно
