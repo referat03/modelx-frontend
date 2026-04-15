@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Check, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,7 +25,7 @@ export function PricingSection() {
           className="text-center"
         >
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Выберите подходящий тариф
+            выберите подходящий тариф
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Прозрачные цены, без скрытых комиссий. Отмена в любое время.
@@ -100,25 +99,7 @@ export function PricingSection() {
           ))}
         </div>
 
-        {/* FAQ Link */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-muted-foreground">
-            Есть вопросы?{' '}
-            <Link href="/faq" className="text-primary underline-offset-4 hover:underline">
-              Посмотрите FAQ
-            </Link>{' '}
-            или{' '}
-            <Link href="/contacts" className="text-primary underline-offset-4 hover:underline">
-              свяжитесь с нами
-            </Link>
-          </p>
-        </motion.div>
+
       </div>
     </section>
   )

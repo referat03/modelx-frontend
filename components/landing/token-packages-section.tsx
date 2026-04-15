@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -83,7 +84,7 @@ export function TokenPackagesSection() {
   }
 
   return (
-    <section className="relative py-20 sm:py-32">
+    <section className="relative pb-20 sm:pb-32">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
@@ -145,6 +146,25 @@ export function TokenPackagesSection() {
             </CarouselNext>
           </Carousel>
         </div>
+        {/* FAQ Link */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-16 text-center"
+        >
+          <p className="text-muted-foreground">
+            Есть вопросы?{' '}
+            <Link href="/faq" className="text-primary underline-offset-4 hover:underline">
+              Посмотрите FAQ
+            </Link>{' '}
+            или{' '}
+            <Link href="/contacts" className="text-primary underline-offset-4 hover:underline">
+              свяжитесь с нами
+            </Link>
+          </p>
+        </motion.div>
       </div>
 
       {/* Confirmation Dialog */}
