@@ -25,7 +25,8 @@ import {
   Check,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import rehypeHighlight from 'rehype-highlight'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,27 +55,16 @@ import { models, getModelById, getAvailableModels } from '@/config/models.config
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-// CodeBlock component for syntax highlighted code blocks with copy button
-function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) {
+// Card-style code block: header strip (language + copy) + syntax-highlighted body
+interface CodeBlockProps {
+  language: string
+  code: string
+}
+
+function CodeBlock({ language, code }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
-  
-  // Extract text content from children
-  const getCodeText = (): string => {
-    const extractText = (node: React.ReactNode): string => {
-      if (typeof node === 'string') return node
-      if (typeof node === 'number') return String(node)
-      if (!node) return ''
-      if (Array.isArray(node)) return node.map(extractText).join('')
-      if (typeof node === 'object' && 'props' in node) {
-        return extractText((node as React.ReactElement).props.children)
-      }
-      return ''
-    }
-    return extractText(children)
-  }
 
   const handleCopy = async () => {
-    const code = getCodeText()
     try {
       await navigator.clipboard.writeText(code)
       setCopied(true)
@@ -85,39 +75,44 @@ function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLE
     }
   }
 
-  return (
-    <div className="relative group my-4">
-      <button
-        onClick={handleCopy}
-        className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-secondary/80 text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground group-hover:opacity-100 focus:opacity-100"
-        aria-label="Копировать код"
-      >
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      </button>
-      <pre
-        className="overflow-x-auto whitespace-pre max-w-full rounded-lg bg-muted p-4"
-        {...props}
-      >
-        <code className={cn("whitespace-pre font-mono text-sm", className)}>
-          {children}
-        </code>
-      </pre>
-    </div>
-  )
-}
+  const displayLang = language || 'plaintext'
 
-// Inline code component (not inside pre)
-function InlineCode({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) {
   return (
-    <code
-      className={cn(
-        "rounded bg-muted px-1.5 py-0.5 font-mono text-sm",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </code>
+    <div className="my-4 rounded-lg overflow-hidden border border-zinc-700/60 not-prose">
+      {/* Header strip */}
+      <div className="flex items-center justify-between bg-zinc-800 px-4 py-2">
+        <span className="text-xs font-medium text-zinc-400 select-none">{displayLang}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 rounded px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
+          aria-label="Скопировать код"
+        >
+          {copied ? (
+            <><Check className="h-3.5 w-3.5" /> Скопировано</>
+          ) : (
+            <><Copy className="h-3.5 w-3.5" /> Скопировать</>
+          )}
+        </button>
+      </div>
+      {/* Code body */}
+      <SyntaxHighlighter
+        language={displayLang}
+        style={vscDarkPlus}
+        customStyle={{
+          margin: 0,
+          borderRadius: 0,
+          background: '#09090b', // zinc-950
+          padding: '1rem',
+          fontSize: '0.875rem',
+          overflowX: 'auto',
+          tabSize: 4,
+        }}
+        codeTagProps={{ style: { fontFamily: 'var(--font-mono)' } }}
+        wrapLongLines={false}
+      >
+        {code}
+      </SyntaxHighlighter>
+    </div>
   )
 }
 
@@ -637,32 +632,28 @@ function ChatContent() {
                         {/* Content — break-words prevents overflow on mobile */}
                         {message.role === 'assistant' ? (
                           <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_p]:overflow-wrap-anywhere">
-                            <ReactMarkdown 
-                              rehypePlugins={[rehypeHighlight]}
+                            <ReactMarkdown
                               components={{
-                                pre: ({ children }) => {
-                                  // Extract the code element from pre children
-                                  const codeElement = children as React.ReactElement
-                                  const codeProps = codeElement?.props || {}
-                                  const codeChildren = codeProps.children
-                                  const codeClassName = codeProps.className || ''
-                                  
+                                // Block code: render as card
+                                code({ className, children }) {
+                                  const match = /language-(\w+)/.exec(className || '')
+                                  const language = match ? match[1] : ''
+                                  const isBlock = Boolean(match)
+
+                                  if (isBlock) {
+                                    const code = String(children).replace(/\n$/, '')
+                                    return <CodeBlock language={language} code={code} />
+                                  }
+
+                                  // Inline code
                                   return (
-                                    <CodeBlock className={codeClassName}>
-                                      {codeChildren}
-                                    </CodeBlock>
+                                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">
+                                      {children}
+                                    </code>
                                   )
                                 },
-                                code: ({ className, children, ...props }) => {
-                                  // Check if this is inline code (not inside pre)
-                                  // When inside pre, the parent pre component handles it
-                                  const isInline = !className?.includes('hljs')
-                                  
-                                  if (isInline) {
-                                    return <InlineCode className={className} {...props}>{children}</InlineCode>
-                                  }
-                                  
-                                  // Return just the children for code inside pre (handled by CodeBlock)
+                                // Suppress the default pre wrapper — CodeBlock renders its own container
+                                pre({ children }) {
                                   return <>{children}</>
                                 },
                               }}
@@ -682,7 +673,7 @@ function ChatContent() {
 
                         {/* Bottom bar: version navigation + regenerate */}
                         {message.role === 'assistant' && !message.isGenerating && (
-                          <div className="mt-2 flex items-center gap-1">
+                          <div className="mt-4 flex items-center gap-1">
                             {hasVersions && (
                               <div className="flex items-center gap-0.5">
                                 <Button
