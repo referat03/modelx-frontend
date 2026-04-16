@@ -5,11 +5,12 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Sparkles, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/auth-context'
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
 
   const navLinks = [
     { href: '/', label: 'Главная' },
@@ -53,12 +54,19 @@ export function Header() {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>
-              <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5">
-                <Coins className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-primary">
-                  {(user?.tokenBalance ?? 0).toFixed(2)}
-                </span>
-              </div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24 rounded-lg" />
+              ) : (
+                <Link
+                  href="/buy-tokens"
+                  className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 transition-colors hover:bg-primary/20 hover:text-primary cursor-pointer"
+                >
+                  <Coins className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-primary">
+                    {(user?.tokenBalance ?? 0).toFixed(2)}
+                  </span>
+                </Link>
+              )}
               <span className="text-sm text-muted-foreground">
                 {user?.name}
               </span>
@@ -117,12 +125,20 @@ export function Header() {
                       <span className="text-sm text-muted-foreground">
                         {user?.name}
                       </span>
-                      <div className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1">
-                        <Coins className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-sm font-medium text-primary">
-                          {(user?.tokenBalance ?? 0).toFixed(2)}
-                        </span>
-                      </div>
+                      {isLoading ? (
+                        <Skeleton className="h-7 w-20 rounded-lg" />
+                      ) : (
+                        <Link
+                          href="/buy-tokens"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1 transition-colors hover:bg-primary/20"
+                        >
+                          <Coins className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-sm font-medium text-primary">
+                            {(user?.tokenBalance ?? 0).toFixed(2)}
+                          </span>
+                        </Link>
+                      )}
                     </div>
                     <Button 
                       variant="ghost" 
