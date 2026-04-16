@@ -83,7 +83,7 @@ export function TokenPackagesSection() {
   }
 
   return (
-    <section className="relative pb-20 sm:pb-32">
+    <section className="relative pt-10 pb-20 sm:pt-16 sm:pb-32">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />

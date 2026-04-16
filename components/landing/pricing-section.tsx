@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="relative py-20 sm:py-32">
+    <section id="pricing" className="relative pt-20 pb-10 sm:pt-32 sm:pb-16">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
