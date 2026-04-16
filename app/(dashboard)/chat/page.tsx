@@ -21,6 +21,8 @@ import {
   ExternalLink,
   Download,
   FileText,
+  Copy,
+  Check,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
@@ -51,6 +53,73 @@ import {
 import { models, getModelById, getAvailableModels } from '@/config/models.config'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+
+// CodeBlock component for syntax highlighted code blocks with copy button
+function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) {
+  const [copied, setCopied] = useState(false)
+  
+  // Extract text content from children
+  const getCodeText = (): string => {
+    const extractText = (node: React.ReactNode): string => {
+      if (typeof node === 'string') return node
+      if (typeof node === 'number') return String(node)
+      if (!node) return ''
+      if (Array.isArray(node)) return node.map(extractText).join('')
+      if (typeof node === 'object' && 'props' in node) {
+        return extractText((node as React.ReactElement).props.children)
+      }
+      return ''
+    }
+    return extractText(children)
+  }
+
+  const handleCopy = async () => {
+    const code = getCodeText()
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      toast.success('Скопировано!')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Не удалось скопировать')
+    }
+  }
+
+  return (
+    <div className="relative group my-4">
+      <button
+        onClick={handleCopy}
+        className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-secondary/80 text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground group-hover:opacity-100 focus:opacity-100"
+        aria-label="Копировать код"
+      >
+        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      </button>
+      <pre
+        className="overflow-x-auto whitespace-pre max-w-full rounded-lg bg-muted p-4"
+        {...props}
+      >
+        <code className={cn("whitespace-pre font-mono text-sm", className)}>
+          {children}
+        </code>
+      </pre>
+    </div>
+  )
+}
+
+// Inline code component (not inside pre)
+function InlineCode({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) {
+  return (
+    <code
+      className={cn(
+        "rounded bg-muted px-1.5 py-0.5 font-mono text-sm",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </code>
+  )
+}
 
 function ChatContent() {
   const searchParams = useSearchParams()
@@ -567,8 +636,37 @@ function ChatContent() {
 
                         {/* Content — break-words prevents overflow on mobile */}
                         {message.role === 'assistant' ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_code]:break-all [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_p]:overflow-wrap-anywhere">
-                            <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                          <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_p]:overflow-wrap-anywhere">
+                            <ReactMarkdown 
+                              rehypePlugins={[rehypeHighlight]}
+                              components={{
+                                pre: ({ children }) => {
+                                  // Extract the code element from pre children
+                                  const codeElement = children as React.ReactElement
+                                  const codeProps = codeElement?.props || {}
+                                  const codeChildren = codeProps.children
+                                  const codeClassName = codeProps.className || ''
+                                  
+                                  return (
+                                    <CodeBlock className={codeClassName}>
+                                      {codeChildren}
+                                    </CodeBlock>
+                                  )
+                                },
+                                code: ({ className, children, ...props }) => {
+                                  // Check if this is inline code (not inside pre)
+                                  // When inside pre, the parent pre component handles it
+                                  const isInline = !className?.includes('hljs')
+                                  
+                                  if (isInline) {
+                                    return <InlineCode className={className} {...props}>{children}</InlineCode>
+                                  }
+                                  
+                                  // Return just the children for code inside pre (handled by CodeBlock)
+                                  return <>{children}</>
+                                },
+                              }}
+                            >
                               {message.content || ''}
                             </ReactMarkdown>
                             {message.isGenerating && (

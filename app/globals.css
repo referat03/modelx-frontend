@@ -161,3 +161,11 @@
     display: none;
   }
 }
+
+/* Code block styling */
+@layer base {
+  pre code {
+    tab-size: 4;
+    -moz-tab-size: 4;
+  }
+}
