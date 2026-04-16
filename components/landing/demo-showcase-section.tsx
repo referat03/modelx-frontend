@@ -588,9 +588,9 @@ export function DemoShowcaseSection() {
           className="rounded-2xl border border-border/50 bg-card/30 p-3 backdrop-blur-sm shadow-2xl shadow-black/30 sm:p-6 lg:p-8"
           style={{ boxShadow: '0 0 0 1px hsl(var(--border) / 0.5), 0 24px 80px -12px rgba(0,0,0,0.5), 0 0 60px -20px hsl(var(--primary) / 0.12)' }}
         >
-          {/* Category tabs — horizontally scrollable on mobile */}
-          <div className="mb-5 overflow-x-auto scrollbar-hide">
-            <div className="flex min-w-max gap-1.5 rounded-xl border border-border/30 bg-muted/30 p-1">
+          {/* Category tabs — primary navigation level */}
+          <div className="mb-7 overflow-x-auto scrollbar-hide">
+            <div className="flex min-w-max gap-1 rounded-xl border border-border/50 bg-muted/50 p-1.5 shadow-inner shadow-black/20">
               {modelCategories.map(cat => {
                 const Icon = categoryIcons[cat.id]
                 const isActive = cat.id === activeCategory
@@ -599,13 +599,13 @@ export function DemoShowcaseSection() {
                     key={cat.id}
                     onClick={() => handleCategoryChange(cat.id)}
                     className={cn(
-                      'flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all cursor-pointer whitespace-nowrap',
+                      'flex items-center justify-center gap-2.5 rounded-lg px-5 py-3 text-sm font-semibold transition-all duration-200 cursor-pointer whitespace-nowrap',
                       isActive
-                        ? 'bg-card text-foreground shadow-sm border border-border/50 shadow-primary/5'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+                        ? 'bg-card text-foreground border border-primary/25 shadow-md shadow-primary/10 ring-1 ring-primary/10'
+                        : 'text-muted-foreground/70 hover:text-foreground/80 hover:bg-card/40'
                     )}
                   >
-                    <Icon className={cn('h-4 w-4 shrink-0', isActive && 'text-primary')} />
+                    <Icon className={cn('h-4 w-4 shrink-0 transition-colors', isActive ? 'text-primary' : 'text-muted-foreground/50')} />
                     <span>{categoryLabels[cat.id]}</span>
                   </button>
                 )
@@ -613,9 +613,9 @@ export function DemoShowcaseSection() {
             </div>
           </div>
 
-          {/* Model pills — horizontally scrollable on mobile */}
-          <div className="mb-5 overflow-x-auto scrollbar-hide">
-            <div className="flex min-w-max gap-2 pb-0.5">
+          {/* Model pills — secondary selection level */}
+          <div className="mb-6 overflow-x-auto scrollbar-hide">
+            <div className="flex min-w-max gap-1.5 pb-0.5">
               {categoryModels.map(model => {
                 const isActive = model.id === activeModelId
                 return (
@@ -623,11 +623,11 @@ export function DemoShowcaseSection() {
                     key={model.id}
                     onClick={() => setActiveModelId(model.id)}
                     className={cn(
-                      'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap',
+                      'flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150 cursor-pointer whitespace-nowrap',
                       isActive
-                        ? 'border-primary/60 bg-primary/15 text-primary shadow-sm shadow-primary/20'
-                        : 'border-border/40 bg-card/40 text-muted-foreground hover:border-border/70 hover:text-foreground',
-                      !model.isAvailable && 'opacity-50'
+                        ? 'border-primary/40 bg-primary/10 text-primary/90'
+                        : 'border-border/30 bg-transparent text-muted-foreground/60 hover:border-border/60 hover:text-muted-foreground',
+                      !model.isAvailable && 'opacity-40'
                     )}
                   >
                     <span>{model.emoji}</span>
