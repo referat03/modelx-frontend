@@ -86,7 +86,7 @@ const modelMeta: Record<string, ModelMeta> = {
     providerColor: 'text-sky-400',
   },
   'musicgen': {
-    description: 'Генерация оригинальной музыки по текстовому описанию от Meta AI. Различные жанры, темп и инструментальный состав.',
+    description: 'Генерация оригинальной музыки по текстовому описанию от Meta AI. Раз��ичные жанры, темп и инструментальный состав.',
     bestFor: ['Фоновая музыка для видео', 'Джинглы и рекламные треки', 'Эмбиент и саундтреки'],
     providerColor: 'text-blue-500',
   },
@@ -388,7 +388,7 @@ function VideoPreview({ model }: { model: AIModel }) {
       </div>
 
       {/* Scene strip */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {videoScenes.map((scene, i) => (
           <button
             key={i}
@@ -552,14 +552,14 @@ export function DemoShowcaseSection() {
   }
 
   return (
-    <section className="relative py-16 sm:py-24">
+    <section className="relative overflow-x-hidden py-16 sm:py-24">
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/4 top-1/2 h-[600px] w-[600px] -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
         <div className="absolute right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-accent/6 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -585,60 +585,64 @@ export function DemoShowcaseSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55, delay: 0.1 }}
-          className="rounded-2xl border border-border/50 bg-card/30 p-4 backdrop-blur-sm shadow-2xl shadow-black/30 sm:p-6 lg:p-8"
+          className="rounded-2xl border border-border/50 bg-card/30 p-3 backdrop-blur-sm shadow-2xl shadow-black/30 sm:p-6 lg:p-8"
           style={{ boxShadow: '0 0 0 1px hsl(var(--border) / 0.5), 0 24px 80px -12px rgba(0,0,0,0.5), 0 0 60px -20px hsl(var(--primary) / 0.12)' }}
         >
-          {/* Category tabs */}
-          <div className="mb-6 flex gap-1.5 overflow-x-auto scrollbar-hide rounded-xl border border-border/30 bg-muted/30 p-1">
-            {modelCategories.map(cat => {
-              const Icon = categoryIcons[cat.id]
-              const isActive = cat.id === activeCategory
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className={cn(
-                    'flex flex-1 min-w-[80px] items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-all cursor-pointer whitespace-nowrap',
-                    isActive
-                      ? 'bg-card text-foreground shadow-sm border border-border/50 shadow-primary/5'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-                  )}
-                >
-                  <Icon className={cn('h-4 w-4 shrink-0', isActive && 'text-primary')} />
-                  <span>{categoryLabels[cat.id]}</span>
-                </button>
-              )
-            })}
+          {/* Category tabs — horizontally scrollable on mobile */}
+          <div className="mb-5 overflow-x-auto scrollbar-hide">
+            <div className="flex min-w-max gap-1.5 rounded-xl border border-border/30 bg-muted/30 p-1">
+              {modelCategories.map(cat => {
+                const Icon = categoryIcons[cat.id]
+                const isActive = cat.id === activeCategory
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryChange(cat.id)}
+                    className={cn(
+                      'flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all cursor-pointer whitespace-nowrap',
+                      isActive
+                        ? 'bg-card text-foreground shadow-sm border border-border/50 shadow-primary/5'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+                    )}
+                  >
+                    <Icon className={cn('h-4 w-4 shrink-0', isActive && 'text-primary')} />
+                    <span>{categoryLabels[cat.id]}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          {/* Model pills */}
-          <div className="mb-6 flex flex-wrap gap-2">
-            {categoryModels.map(model => {
-              const isActive = model.id === activeModelId
-              return (
-                <button
-                  key={model.id}
-                  onClick={() => setActiveModelId(model.id)}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer',
-                    isActive
-                      ? 'border-primary/60 bg-primary/15 text-primary shadow-sm shadow-primary/20'
-                      : 'border-border/40 bg-card/40 text-muted-foreground hover:border-border/70 hover:text-foreground',
-                    !model.isAvailable && 'opacity-50'
-                  )}
-                >
-                  <span>{model.emoji}</span>
-                  <span>{model.name}</span>
-                  {!model.isAvailable && (
-                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">скоро</span>
-                  )}
-                  {isActive && <Check className="h-3 w-3" />}
-                </button>
-              )
-            })}
+          {/* Model pills — horizontally scrollable on mobile */}
+          <div className="mb-5 overflow-x-auto scrollbar-hide">
+            <div className="flex min-w-max gap-2 pb-0.5">
+              {categoryModels.map(model => {
+                const isActive = model.id === activeModelId
+                return (
+                  <button
+                    key={model.id}
+                    onClick={() => setActiveModelId(model.id)}
+                    className={cn(
+                      'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap',
+                      isActive
+                        ? 'border-primary/60 bg-primary/15 text-primary shadow-sm shadow-primary/20'
+                        : 'border-border/40 bg-card/40 text-muted-foreground hover:border-border/70 hover:text-foreground',
+                      !model.isAvailable && 'opacity-50'
+                    )}
+                  >
+                    <span>{model.emoji}</span>
+                    <span>{model.name}</span>
+                    {!model.isAvailable && (
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">скоро</span>
+                    )}
+                    {isActive && <Check className="h-3 w-3" />}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          {/* Two-column panel */}
+          {/* Two-column panel: stacked on mobile, side-by-side on lg+ */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeModelId}
@@ -646,15 +650,15 @@ export function DemoShowcaseSection() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, ease: 'easeOut' }}
-              className="grid gap-6 lg:grid-cols-[1fr_1.6fr]"
+              className="flex flex-col gap-6 lg:grid lg:grid-cols-[1fr_1.6fr]"
             >
               {/* ── Left info panel ── */}
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-4 sm:gap-5">
                 {/* Model name + provider */}
                 <div>
                   <div className="mb-1 flex items-center gap-2">
-                    <span className="text-2xl">{activeModel?.emoji}</span>
-                    <h3 className="text-xl font-bold tracking-tight">{activeModel?.name}</h3>
+                    <span className="text-xl sm:text-2xl">{activeModel?.emoji}</span>
+                    <h3 className="text-lg font-bold tracking-tight sm:text-xl">{activeModel?.name}</h3>
                     {activeModel && !activeModel.isAvailable && (
                       <span className="rounded-full border border-border/40 bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                         Скоро
@@ -687,7 +691,7 @@ export function DemoShowcaseSection() {
                 </div>
 
                 {/* CTA */}
-                <div className="mt-auto pt-2">
+                <div className="pt-1 lg:mt-auto lg:pt-2">
                   <Button className="group w-full sm:w-auto" asChild>
                     <Link href="/signup">
                       Попробовать {activeModel?.name}
@@ -701,7 +705,7 @@ export function DemoShowcaseSection() {
               </div>
 
               {/* ── Right preview panel ── */}
-              <div className="min-h-[340px]">
+              <div className="w-full min-w-0 sm:min-h-[340px]">
                 {activeCategory === 'image' && <ImagePreview />}
                 {activeCategory === 'text' && activeModel && <TextPreview model={activeModel} />}
                 {activeCategory === 'video' && activeModel && <VideoPreview model={activeModel} />}
