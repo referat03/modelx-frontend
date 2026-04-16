@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Sparkles, LayoutDashboard, MessageSquare, User, CreditCard, Shield } from 'lucide-react'
+import { Menu, X, Sparkles, LayoutDashboard, MessageSquare, User, CreditCard, Shield, Coins } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -77,6 +77,17 @@ export function DashboardHeader() {
 
         {/* User Menu */}
         <div className="hidden items-center gap-3 md:flex">
+          {/* Token balance */}
+          <Link
+            href="/buy-tokens"
+            className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 transition-colors hover:bg-primary/20 cursor-pointer"
+          >
+            <Coins className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">
+              {(user?.tokenBalance ?? 0).toFixed(2)}
+            </span>
+          </Link>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full cursor-pointer">
@@ -185,10 +196,20 @@ export function DashboardHeader() {
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{user?.name}</p>
                     <p className="text-xs text-muted-foreground">{user?.email}</p>
                   </div>
+                  <Link
+                    href="/buy-tokens"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1 transition-colors hover:bg-primary/20 cursor-pointer"
+                  >
+                    <Coins className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-sm font-medium text-primary">
+                      {(user?.tokenBalance ?? 0).toFixed(2)}
+                    </span>
+                  </Link>
                 </div>
                 <Button
                   variant="ghost"

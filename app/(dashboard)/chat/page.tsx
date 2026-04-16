@@ -23,6 +23,7 @@ import {
   FileText,
   Copy,
   Check,
+  Coins,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -484,6 +485,17 @@ function ChatContent() {
         </Select>
 
         <div className="flex-1" />
+
+        {/* Token balance */}
+        <Link
+          href="/buy-tokens"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 transition-colors hover:bg-primary/20 cursor-pointer"
+        >
+          <Coins className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-primary">
+            {(user?.tokenBalance ?? 0).toFixed(2)}
+          </span>
+        </Link>
 
         {/* New chat button */}
         <Button variant="outline" size="sm" onClick={handleNewChat} className="shrink-0 cursor-pointer">
