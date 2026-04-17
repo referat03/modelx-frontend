@@ -29,9 +29,63 @@ import { models, modelCategories, getModelsByCategory, type ModelCategory, type 
 // ─── Demo meta-data for each model ───────────────────────────────────────────
 
 interface ModelMeta {
-  description: string
   bestFor: string[]
   providerColor: string
+}
+
+const modelMeta: Record<string, ModelMeta> = {
+  'gpt-4': {
+    bestFor: ['Глубокий анализ и многоэтапный reasoning', 'Написание и рефакторинг кода', 'Стратегический и деловой текст'],
+    providerColor: 'text-emerald-400',
+  },
+  'gpt-3.5-turbo': {
+    bestFor: ['Чат-боты и автоматизация', 'Быстрые резюме и переводы', 'Массовая генерация контента'],
+    providerColor: 'text-emerald-400',
+  },
+  'claude-3': {
+    bestFor: ['Анализ объёмных документов (100K токенов)', 'Академическое и аналитическое письмо', 'Безопасная и взвешенная генерация'],
+    providerColor: 'text-orange-400',
+  },
+  'gemini-pro': {
+    bestFor: ['Мультимодальный анализ текста и данных', 'Работа с кодом и SQL', 'Задачи поиска и Q&A'],
+    providerColor: 'text-blue-400',
+  },
+  'llama-2': {
+    bestFor: ['Приватные корпоративные развёртывания', 'Fine-tuning под специфику задач', 'Исследования и прототипирование'],
+    providerColor: 'text-blue-500',
+  },
+  'dall-e-3': {
+    bestFor: ['Концепт-арт и фотореалистичные сцены', 'Маркетинговые и рекламные креативы', 'UI-мокапы и продуктовые визуалы'],
+    providerColor: 'text-emerald-400',
+  },
+  'midjourney': {
+    bestFor: ['Художественные и editorial-проекты', 'Брендинг и концепт-дизайн', 'Fashion и lifestyle-визуалы'],
+    providerColor: 'text-purple-400',
+  },
+  'stable-diffusion': {
+    bestFor: ['Inpainting и точечное редактирование', 'Кастомные fine-tuned стили', 'Продуктовые и технические визуалы'],
+    providerColor: 'text-yellow-400',
+  },
+  'whisper': {
+    bestFor: ['Транскрипция интервью и подкастов', 'Субтитры для видео', 'Мультиязычные голосовые команды'],
+    providerColor: 'text-emerald-400',
+  },
+  'elevenlabs': {
+    bestFor: ['Озвучка и дикторский текст', 'Голосовые ассистенты и IVR', 'Аудиокниги и обучающие курсы'],
+    providerColor: 'text-sky-400',
+  },
+  'musicgen': {
+    bestFor: ['Фоновая музыка для видео', 'Джинглы и рекламные треки', 'Эмбиент и саундтреки'],
+    providerColor: 'text-blue-500',
+  },
+  'runway-gen2': {
+    bestFor: ['Кинематографические text-to-video клипы', 'Рекламные и маркетинговые ролики', 'Социальные медиа-креативы'],
+    providerColor: 'text-rose-400',
+  },
+  'pika': {
+    bestFor: ['Редактирование существующего видео', 'Короткий контент для соцсетей', 'Animated-визуалы для брендов'],
+    providerColor: 'text-violet-400',
+  },
 }
 
 const modelMeta: Record<string, ModelMeta> = {
@@ -667,11 +721,6 @@ export function DemoShowcaseSection() {
                   </div>
                   <p className={cn('text-sm font-medium', meta.providerColor)}>{activeModel?.provider}</p>
                 </div>
-
-                {/* Description */}
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {meta.description}
-                </p>
 
                 {/* Best for */}
                 <div>
