@@ -178,21 +178,3 @@
   }
 }
 
-/* Soft section snap for the landing page — proximity-based, never forced.
-   Only engages on taller viewports and is disabled for reduced-motion users. */
-@media (min-width: 1024px) and (min-height: 720px) {
-  html:has([data-snap-section]) {
-    scroll-snap-type: y proximity;
-    scroll-padding-top: 4rem; /* accounts for the 64px fixed header */
-  }
-  [data-snap-section] {
-    scroll-snap-align: start;
-    scroll-snap-stop: normal;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html:has([data-snap-section]) {
-    scroll-snap-type: none;
-  }
-}
