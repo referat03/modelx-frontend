@@ -72,7 +72,8 @@ export function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="relative scroll-mt-24 py-16 sm:py-24"
+      data-snap-section
+      className="relative scroll-mt-16 py-20 sm:py-28"
     >
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">

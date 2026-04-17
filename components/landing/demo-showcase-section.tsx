@@ -537,7 +537,10 @@ export function DemoShowcaseSection() {
   }
 
   return (
-    <section className="relative overflow-x-hidden py-16 sm:py-24">
+    <section
+      data-snap-section
+      className="relative overflow-x-hidden py-20 sm:py-28"
+    >
       {/* Subtle background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/4 top-1/2 h-[600px] w-[600px] -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />

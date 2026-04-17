@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden pt-16">
+    <section
+      data-snap-section
+      className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden"
+    >
       {/* Soft gradient glows layered on top of the cosmic background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
@@ -15,7 +18,7 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-[url('/stars.svg')] bg-repeat opacity-30" />
       </div>
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-center px-4 pt-16 pb-20 text-center sm:px-6 sm:pt-24 sm:pb-28 lg:px-8">
+      <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-8">
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
