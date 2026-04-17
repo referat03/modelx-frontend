@@ -142,6 +142,30 @@ function ChatContent() {
   const availableModels = getAvailableModels()
   const currentModel = getModelById(selectedModel)
 
+  // Auto-resize textarea: grows upward up to 11 lines, then scrolls internally
+  const MAX_INPUT_LINES = 11
+  const adjustTextareaHeight = useCallback(() => {
+    const el = textareaRef.current
+    if (!el) return
+    // Reset height so scrollHeight reflects content, not previous height
+    el.style.height = 'auto'
+    const styles = window.getComputedStyle(el)
+    const lineHeight = parseFloat(styles.lineHeight) || 24
+    const paddingY =
+      parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom)
+    const borderY =
+      parseFloat(styles.borderTopWidth) + parseFloat(styles.borderBottomWidth)
+    const maxHeight = lineHeight * MAX_INPUT_LINES + paddingY + borderY
+    const nextHeight = Math.min(el.scrollHeight, maxHeight)
+    el.style.height = `${nextHeight}px`
+    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden'
+  }, [])
+
+  // Recompute height whenever the value changes (typing, paste, clear, etc.)
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [inputValue, adjustTextareaHeight])
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -794,7 +818,10 @@ function ChatContent() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Введите сообщение..."
-                  className="min-h-[44px] max-h-[200px] resize-none"
+                  className="min-h-[44px] resize-none leading-6 py-2.5 overflow-y-hidden scrollbar-hide"
+                  // field-sizing:fixed disables the browser's auto content-sizing
+                  // so our JS-based auto-resize is the single source of truth.
+                  style={{ fieldSizing: 'fixed' } as React.CSSProperties}
                   rows={1}
                   disabled={isGenerating}
                 />
