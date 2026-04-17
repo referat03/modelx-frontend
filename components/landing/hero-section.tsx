@@ -72,15 +72,24 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-7 flex w-full flex-col gap-3 sm:mt-9 sm:w-auto sm:flex-row sm:gap-4"
+          className="mt-6 flex w-full flex-col gap-2.5 sm:mt-9 sm:w-auto sm:flex-row sm:gap-4"
         >
-          <Button size="lg" className="group h-9 w-full sm:h-10 sm:w-auto" asChild>
+          <Button
+            size="lg"
+            className="group h-9 w-full rounded-md text-sm font-medium sm:h-10 sm:w-auto sm:rounded-md sm:text-base sm:font-semibold"
+            asChild
+          >
             <Link href="/signup">
               Начать бесплатно
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1 sm:ml-2 sm:h-4 sm:w-4" />
             </Link>
           </Button>
-          <Button size="lg" variant="outline" className="h-9 w-full sm:h-10 sm:w-auto" asChild>
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-9 w-full rounded-md text-sm font-medium sm:h-10 sm:w-auto sm:rounded-md sm:text-base sm:font-semibold"
+            asChild
+          >
             <Link href="#how-it-works">Узнать больше</Link>
           </Button>
         </motion.div>
