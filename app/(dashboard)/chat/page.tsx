@@ -23,6 +23,7 @@ import {
   FileText,
   Copy,
   Check,
+  Share2,
   Coins,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -133,7 +134,13 @@ function ChatContent() {
   // Mobile drawer open state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
-  
+  // Which assistant message currently shows a "copied" confirmation
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
+  // Whether a file is currently being dragged over the composer
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+  // Ref-counter to avoid dragleave flicker when moving over child elements
+  const dragCounterRef = useRef(0)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -391,32 +398,107 @@ function ChatContent() {
     )
   }, [])
 
-  const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files) return
-
+  // Shared file intake used by both the paperclip input and drag-and-drop
+  const addFilesToAttachments = useCallback((files: FileList | File[]) => {
     const maxSize = 10 * 1024 * 1024 // 10 MB
+    const accepted: Attachment[] = []
 
-    for (const file of Array.from(files)) {
+    Array.from(files).forEach((file, idx) => {
       if (file.size > maxSize) {
         toast.error(`Файл ${file.name} слишком большой (максимум 10 МБ)`)
-        continue
+        return
       }
-
-      const attachment: Attachment = {
-        id: `att_${Date.now()}`,
+      accepted.push({
+        id: `att_${Date.now()}_${idx}`,
         name: file.name,
         type: file.type,
         size: file.size,
         url: URL.createObjectURL(file),
         previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-      }
+      })
+    })
 
-      setAttachments(prev => [...prev, attachment])
+    if (accepted.length > 0) {
+      setAttachments(prev => [...prev, ...accepted])
     }
+  }, [])
 
+  const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files && files.length > 0) {
+      addFilesToAttachments(files)
+    }
     event.target.value = ''
   }
+
+  // Drag-and-drop handlers for the composer area
+  const handleComposerDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return
+    e.preventDefault()
+    dragCounterRef.current += 1
+    setIsDraggingFile(true)
+  }, [])
+
+  const handleComposerDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const handleComposerDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return
+    e.preventDefault()
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+    if (dragCounterRef.current === 0) setIsDraggingFile(false)
+  }, [])
+
+  const handleComposerDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer?.types?.includes('Files')) return
+    e.preventDefault()
+    dragCounterRef.current = 0
+    setIsDraggingFile(false)
+    if (isGenerating) return
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      addFilesToAttachments(files)
+    }
+  }, [addFilesToAttachments, isGenerating])
+
+  // Copy the currently visible assistant response to clipboard.
+  // Because handleVersionChange writes the active variant into `content`,
+  // copying `content` always reflects what the user is currently reading.
+  const handleCopyMessage = useCallback(async (message: Message) => {
+    const text = message.content?.trim()
+    if (!text) return
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedMessageId(message.id)
+      toast.success('Ответ скопирован')
+      setTimeout(() => {
+        setCopiedMessageId(prev => (prev === message.id ? null : prev))
+      }, 2000)
+    } catch {
+      toast.error('Не удалось скопировать')
+    }
+  }, [])
+
+  // Share: copy a frontend-friendly deep link to this message.
+  // Uses window.location.origin + the current chat id + message id so the link
+  // is stable within the mock app without requiring a backend share system.
+  const handleShareMessage = useCallback(async (message: Message) => {
+    try {
+      const origin =
+        typeof window !== 'undefined' ? window.location.origin : ''
+      const chatId = currentChat?.id
+      const shareUrl = chatId
+        ? `${origin}/chat?id=${chatId}&m=${message.id}`
+        : `${origin}/chat?m=${message.id}`
+      await navigator.clipboard.writeText(shareUrl)
+      toast.success('Ссылка скопирована')
+    } catch {
+      toast.error('Не удалось скопировать ссылку')
+    }
+  }, [currentChat])
 
   const removeAttachment = (id: string) => {
     setAttachments(prev => prev.filter(a => a.id !== id))
@@ -707,48 +789,87 @@ function ChatContent() {
                           <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{message.content}</p>
                         )}
 
-                        {/* Bottom bar: version navigation + regenerate */}
-                        {message.role === 'assistant' && !message.isGenerating && (
-                          <div className="mt-4 flex items-center gap-1">
-                            {hasVersions && (
-                              <div className="flex items-center gap-0.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleVersionChange(message.id, 'prev')}
-                                  disabled={versionIndex === 0}
-                                  aria-label="Предыдущая версия"
-                                >
-                                  <ChevronLeft className="h-3 w-3" />
-                                </Button>
-                                <span className="min-w-[2.5rem] text-center text-xs text-muted-foreground">
-                                  {versionIndex + 1}/{versions!.length}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                                  onClick={() => handleVersionChange(message.id, 'next')}
-                                  disabled={versionIndex === versions!.length - 1}
-                                  aria-label="Следующая версия"
-                                >
-                                  <ChevronRight className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
-                              onClick={() => handleRegenerate(message.id)}
-                              disabled={isGenerating}
-                            >
-                              <RefreshCw className="mr-1 h-3 w-3" />
-                              Регенерировать
-                            </Button>
-                          </div>
-                        )}
+                        {/* Bottom bar: version navigation + icon-only actions.
+                            Copy/Share appear only for text responses (non-empty content). */}
+                        {message.role === 'assistant' && !message.isGenerating && (() => {
+                          const isTextResponse =
+                            typeof message.content === 'string' &&
+                            message.content.trim().length > 0
+                          const isCopied = copiedMessageId === message.id
+
+                          return (
+                            <div className="mt-3 flex flex-wrap items-center gap-0.5">
+                              {hasVersions && (
+                                <div className="mr-1 flex items-center gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    onClick={() => handleVersionChange(message.id, 'prev')}
+                                    disabled={versionIndex === 0}
+                                    aria-label="Предыдущая версия"
+                                  >
+                                    <ChevronLeft className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <span className="min-w-[2.25rem] text-center text-xs tabular-nums text-muted-foreground/80">
+                                    {versionIndex + 1}/{versions!.length}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    onClick={() => handleVersionChange(message.id, 'next')}
+                                    disabled={versionIndex === versions!.length - 1}
+                                    aria-label="Следующая версия"
+                                  >
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                onClick={() => handleRegenerate(message.id)}
+                                disabled={isGenerating}
+                                aria-label="Регенерировать ответ"
+                                title="Регенерировать"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              </Button>
+
+                              {isTextResponse && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    onClick={() => handleCopyMessage(message)}
+                                    aria-label={isCopied ? 'Скопировано' : 'Скопировать ответ'}
+                                    title={isCopied ? 'Скопировано' : 'Скопировать'}
+                                  >
+                                    {isCopied ? (
+                                      <Check className="h-3.5 w-3.5 text-primary" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    onClick={() => handleShareMessage(message)}
+                                    aria-label="Поделиться ответом"
+                                    title="Поделиться"
+                                  >
+                                    <Share2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </div>
 
                       {message.role === 'user' && (
@@ -766,9 +887,25 @@ function ChatContent() {
             </div>
           </div>
 
-          {/* Input area */}
-          <div className="shrink-0 border-t border-border/30 bg-card/50 p-3 sm:p-4 backdrop-blur-sm">
-            <div className="mx-auto max-w-3xl">
+          {/* Input area — supports drag & drop of files into the composer */}
+          <div
+            className={cn(
+              'relative shrink-0 border-t border-border/30 bg-card/50 p-3 sm:p-4 backdrop-blur-sm transition-colors duration-150',
+              isDraggingFile && 'bg-primary/5'
+            )}
+            onDragEnter={handleComposerDragEnter}
+            onDragOver={handleComposerDragOver}
+            onDragLeave={handleComposerDragLeave}
+            onDrop={handleComposerDrop}
+          >
+            {/* Subtle drop indicator — no giant overlay, just a hinted ring */}
+            {isDraggingFile && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-2 rounded-xl border border-dashed border-primary/50 ring-1 ring-primary/20 sm:inset-3"
+              />
+            )}
+            <div className="relative mx-auto max-w-3xl">
               {/* Attachments preview */}
               {attachments.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
