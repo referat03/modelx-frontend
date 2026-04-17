@@ -69,28 +69,18 @@ export function HeroSection() {
 
         {/* CTA Buttons */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-9 sm:gap-4"
+          className="mt-10 flex flex-col gap-4 sm:flex-row"
         >
-          <Button
-            size="lg"
-            className="group h-10 rounded-lg px-5 text-sm font-medium sm:h-10 sm:px-6 sm:text-base sm:font-semibold"
-            asChild
-          >
+          <Button size="lg" className="group" asChild>
             <Link href="/signup">
               Начать бесплатно
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1 sm:ml-2 sm:h-4 sm:w-4" />
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>
-
-          <Button
-            size="lg"
-            variant="outline"
-            className="h-10 rounded-lg px-5 text-sm font-medium sm:h-10 sm:px-6 sm:text-base sm:font-semibold"
-            asChild
-          >
+          <Button size="lg" variant="outline" asChild>
             <Link href="#how-it-works">Узнать больше</Link>
           </Button>
         </motion.div>
