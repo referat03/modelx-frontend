@@ -64,8 +64,7 @@ export function HeroSection() {
           className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg"
         >
           Переключайтесь между GPT-4, Claude, DALL·E, Midjourney, ElevenLabs и
-          другими AI-моделями для текста, изображений, видео и аудио — без
-          лишней путаницы и десятков отдельных сервисов.
+          другими AI-моделями без лишней путаницы и десятков отдельных сервисов.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -84,22 +83,6 @@ export function HeroSection() {
           <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
             <Link href="#how-it-works">Узнать больше</Link>
           </Button>
-        </motion.div>
-
-        {/* Quiet bottom anchor — closes the composition without clutter */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="mt-8 flex items-center gap-2.5 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground/55 sm:mt-10 sm:text-[11px]"
-        >
-          <span>Текст</span>
-          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/40" />
-          <span>Изображения</span>
-          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/40" />
-          <span>Видео</span>
-          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/40" />
-          <span>Аудио</span>
         </motion.div>
       </div>
     </section>
