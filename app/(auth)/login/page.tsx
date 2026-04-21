@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -11,7 +12,6 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Logo } from '@/components/ui/logo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -71,10 +71,19 @@ function LoginForm() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        {/* Logo */}
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <Logo size={40} priority />
-          <span className="text-2xl font-bold tracking-tight">ModelX</span>
+        {/* Brand lockup — render the SVG mark directly (it is already a
+            self-contained black square with the X carved inside), so no
+            extra colored badge or icon-style container is needed. */}
+        <Link href="/" className="mb-8 flex items-center justify-center gap-2.5">
+          <Image
+            src="/modelx-logo-mark.svg"
+            alt="ModelX"
+            width={44}
+            height={44}
+            priority
+            className="h-11 w-11 shrink-0 rounded-xl"
+          />
+          <span className="text-2xl font-bold leading-none tracking-tight">ModelX</span>
         </Link>
 
         <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
