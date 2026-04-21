@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff, Sparkles, Mail, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -71,19 +70,12 @@ function LoginForm() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        {/* Brand lockup — render the PNG mark directly (it is already a
-            self-contained black square with the X carved inside), so no
-            extra colored badge or icon-style container is needed. */}
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2.5">
-          <Image
-            src="/modelx-logo-mark.png"
-            alt="ModelX"
-            width={44}
-            height={44}
-            priority
-            className="h-11 w-11 shrink-0 rounded-xl"
-          />
-          <span className="text-2xl font-bold leading-none tracking-tight">ModelX</span>
+        {/* Logo */}
+        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <Sparkles className="h-6 w-6 text-primary-foreground" />
+          </div>
+          <span className="text-2xl font-bold tracking-tight">ModelX</span>
         </Link>
 
         <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
