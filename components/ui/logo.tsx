@@ -14,9 +14,9 @@ interface LogoProps {
 
 /**
  * ModelX brand mark.
- * The source SVG already has its own black background with the "X" mark cut
- * into it, so it's rendered as a self-contained square with rounded corners
- * to match the rest of the UI's visual language.
+ * The source asset is already a self-contained black square with the "X"
+ * carved into it, so we render it directly with rounded corners — no outer
+ * colored wrapper — to avoid a "logo inside a box" double-layer look.
  */
 export function Logo({
   size = 36,
@@ -25,21 +25,14 @@ export function Logo({
   priority = false,
 }: LogoProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-foreground',
-        className
-      )}
+    <Image
+      src="/modelx-logo-mark.png"
+      alt={alt}
+      width={size}
+      height={size}
+      priority={priority}
+      className={cn('shrink-0 rounded-lg object-contain', className)}
       style={{ width: size, height: size }}
-    >
-      <Image
-        src="/modelx-logo-mark.svg"
-        alt={alt}
-        width={size}
-        height={size}
-        priority={priority}
-        className="h-full w-full object-contain"
-      />
-    </span>
+    />
   )
 }

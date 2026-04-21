@@ -71,12 +71,12 @@ function LoginForm() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        {/* Brand lockup — render the SVG mark directly (it is already a
+        {/* Brand lockup — render the PNG mark directly (it is already a
             self-contained black square with the X carved inside), so no
             extra colored badge or icon-style container is needed. */}
         <Link href="/" className="mb-8 flex items-center justify-center gap-2.5">
           <Image
-            src="/modelx-logo-mark.svg"
+            src="/modelx-logo-mark.png"
             alt="ModelX"
             width={44}
             height={44}
