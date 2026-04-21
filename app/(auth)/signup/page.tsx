@@ -7,10 +7,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Sparkles, Mail, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/ui/logo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -98,12 +99,10 @@ function SignupForm() {
         className="w-full max-w-md"
       >
         {/* Logo */}
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Sparkles className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight">ModelX</span>
-        </Link>
+          <Link href="/" className="mb-8 flex items-center justify-center gap-2">
+            <Logo size={40} priority />
+            <span className="text-2xl font-bold tracking-tight">ModelX</span>
+          </Link>
 
         <AnimatePresence mode="wait">
           {step === 'signup' ? (
