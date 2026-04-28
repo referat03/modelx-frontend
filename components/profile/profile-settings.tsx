@@ -187,14 +187,18 @@ export function ProfileSettings() {
 
             <PopoverContent
               align="start"
-              sideOffset={12}
-              className="w-auto max-w-[min(92vw,360px)] border-border/60 bg-popover/95 p-3 backdrop-blur-xl"
+              sideOffset={14}
+              // Larger, more comfortable picker. Width is clamped so it stays
+              // pleasant on desktop and never overflows on mobile.
+              className="w-[min(96vw,480px)] border-border/60 bg-popover/95 p-4 backdrop-blur-xl sm:p-5"
             >
-              <div className="mb-3 px-1">
-                <p className="text-sm font-medium text-foreground">Выберите аватар</p>
-                <p className="text-xs text-muted-foreground">5 готовых вариантов</p>
+              <div className="mb-4 px-1">
+                <p className="text-base font-semibold text-foreground">Выберите аватар</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  5 космических компаньонов ModelX
+                </p>
               </div>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-2.5 sm:gap-3.5">
                 {AVATAR_PRESETS.map((preset) => {
                   const isActive = user.avatarUrl === preset.src
                   const isSaving = savingAvatar === preset.src
@@ -208,34 +212,50 @@ export function ProfileSettings() {
                       aria-pressed={isActive}
                       title={preset.label}
                       className={cn(
-                        'group relative aspect-square shrink-0 cursor-pointer overflow-hidden rounded-full',
-                        'outline-none ring-offset-background transition-all duration-200',
-                        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                        'disabled:cursor-not-allowed',
-                        isActive
-                          ? 'ring-2 ring-primary ring-offset-2'
-                          : 'ring-1 ring-border/60 hover:scale-[1.04] hover:ring-foreground/40'
+                        'group flex flex-col items-center gap-1.5 rounded-lg p-1 outline-none',
+                        'cursor-pointer transition-colors duration-200',
+                        'focus-visible:bg-foreground/5 disabled:cursor-not-allowed'
                       )}
                     >
-                      <Image
-                        src={preset.src}
-                        alt={preset.label}
-                        width={80}
-                        height={80}
-                        className="h-full w-full object-cover"
-                      />
-                      {(isActive || isSaving) && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-0 flex items-center justify-center bg-foreground/35 backdrop-blur-[1px]"
-                        >
-                          {isSaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-background" />
-                          ) : (
-                            <Check className="h-4 w-4 text-background" strokeWidth={3} />
-                          )}
-                        </span>
-                      )}
+                      <span
+                        className={cn(
+                          'relative block aspect-square w-full overflow-hidden rounded-full bg-muted/40',
+                          'ring-offset-2 ring-offset-popover transition-all duration-200',
+                          isActive
+                            ? 'ring-2 ring-primary'
+                            : 'ring-1 ring-border/60 group-hover:scale-[1.05] group-hover:ring-foreground/40 group-focus-visible:ring-2 group-focus-visible:ring-ring'
+                        )}
+                      >
+                        <Image
+                          src={preset.src}
+                          alt={preset.label}
+                          fill
+                          sizes="(max-width: 640px) 18vw, 80px"
+                          className="object-cover"
+                        />
+                        {(isActive || isSaving) && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute inset-0 flex items-center justify-center bg-foreground/40 backdrop-blur-[1px]"
+                          >
+                            {isSaving ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-background" />
+                            ) : (
+                              <Check className="h-4 w-4 text-background" strokeWidth={3} />
+                            )}
+                          </span>
+                        )}
+                      </span>
+                      <span
+                        className={cn(
+                          'block w-full truncate text-center text-[11px] leading-tight transition-colors',
+                          isActive
+                            ? 'font-medium text-foreground'
+                            : 'text-muted-foreground group-hover:text-foreground'
+                        )}
+                      >
+                        {preset.label}
+                      </span>
                     </button>
                   )
                 })}
