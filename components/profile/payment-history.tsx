@@ -104,7 +104,7 @@ export function PaymentHistory() {
           </div>
           <Button
             variant="outline"
-            className="mt-4"
+            className="mt-4 cursor-pointer disabled:cursor-not-allowed"
             onClick={handleManagePaymentMethods}
           >
             Управление картами
@@ -170,6 +170,8 @@ export function PaymentHistory() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDownloadReceipt(payment.id)}
+                              aria-label="Скачать квитанцию"
+                              className="cursor-pointer disabled:cursor-not-allowed"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -191,27 +193,6 @@ export function PaymentHistory() {
         </CardContent>
       </Card>
 
-      {/* Billing Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Платёжная информация</CardTitle>
-          <CardDescription>
-            Данные для выставления счетов
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Настройка платёжной информации будет доступна после интеграции платёжной системы.
-          </p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => toast.info('Настройка платёжной информации скоро будет доступна')}
-          >
-            Настроить
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Eye, EyeOff, Lock, Smartphone, Monitor, LogOut, Shield, AlertTriangle } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, Smartphone, Monitor, LogOut, Shield, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -57,6 +57,11 @@ export function SecuritySettings() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+  // Tracks whether the password-change confirmation email has been "sent".
+  // When true, the form is replaced with a confirmation Alert. The actual
+  // password is NOT changed here — change happens only after the user clicks
+  // the link in the confirmation email (real flow handled by backend).
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false)
 
   const {
     register,
@@ -74,13 +79,27 @@ export function SecuritySettings() {
 
   const onSubmit = async (data: PasswordFormData) => {
     setIsChangingPassword(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    toast.success('Пароль успешно изменён')
-    reset()
+
+    // Mock: simulate sending a confirmation email instead of changing
+    // the password directly. The actual password update will happen when
+    // the user follows the link in the email (handled by backend later).
+    await new Promise(resolve => setTimeout(resolve, 800))
+
     setIsChangingPassword(false)
+    setEmailConfirmationSent(true)
+    reset()
+    toast.success('Письмо для подтверждения отправлено')
+  }
+
+  const handleResendConfirmation = async () => {
+    setIsChangingPassword(true)
+    await new Promise(resolve => setTimeout(resolve, 600))
+    setIsChangingPassword(false)
+    toast.success('Письмо отправлено повторно')
+  }
+
+  const handleStartOver = () => {
+    setEmailConfirmationSent(false)
   }
 
   const handleTerminateSession = (sessionId: string) => {
@@ -108,10 +127,41 @@ export function SecuritySettings() {
         <CardHeader>
           <CardTitle>Смена пароля</CardTitle>
           <CardDescription>
-            Используйте надёжный пароль длиной не менее 8 символов
+            Для смены пароля потребуется подтверждение по email
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {emailConfirmationSent ? (
+            <div className="space-y-4">
+              <Alert>
+                <Mail className="h-4 w-4" />
+                <AlertTitle>Письмо отправлено</AlertTitle>
+                <AlertDescription>
+                  Для смены пароля мы отправили письмо с подтверждением на вашу почту.
+                  Перейдите по ссылке в письме, чтобы подтвердить смену пароля.
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleResendConfirmation}
+                  disabled={isChangingPassword}
+                  aria-busy={isChangingPassword}
+                  className="cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {isChangingPassword ? 'Отправка...' : 'Отправить ещё раз'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleStartOver}
+                  disabled={isChangingPassword}
+                  className="cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Изменить пароль ещё раз
+                </Button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Current Password */}
             <div className="space-y-2">
@@ -128,7 +178,7 @@ export function SecuritySettings() {
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                 >
                   {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -153,7 +203,7 @@ export function SecuritySettings() {
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                 >
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -178,7 +228,7 @@ export function SecuritySettings() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -188,10 +238,16 @@ export function SecuritySettings() {
               )}
             </div>
 
-            <Button type="submit" disabled={isChangingPassword}>
-              {isChangingPassword ? 'Сохранение...' : 'Сменить пароль'}
+            <Button
+              type="submit"
+              disabled={isChangingPassword}
+              aria-busy={isChangingPassword}
+              className="cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isChangingPassword ? 'Отправка...' : 'Сменить пароль'}
             </Button>
           </form>
+          )}
         </CardContent>
       </Card>
 
@@ -209,14 +265,11 @@ export function SecuritySettings() {
         <CardContent>
           <Alert>
             <Shield className="h-4 w-4" />
-            <AlertTitle>2FA не включена</AlertTitle>
-            <AlertDescription>
-              Включите двухфакторную аутентификацию для дополнительной защиты аккаунта.
-            </AlertDescription>
+            <AlertTitle>2FA временно отключена</AlertTitle>
           </Alert>
           <Button
-            className="mt-4"
-            onClick={() => toast.info('2FA будет доступна после интеграции с бэкендом')}
+            className="mt-4 cursor-pointer disabled:cursor-not-allowed"
+            onClick={() => toast.info('2FA временно отключена')}
           >
             Включить 2FA
           </Button>
@@ -233,7 +286,7 @@ export function SecuritySettings() {
                 Устройства, на которых вы авторизованы
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={handleTerminateAllSessions}>
+            <Button variant="outline" size="sm" onClick={handleTerminateAllSessions} className="cursor-pointer disabled:cursor-not-allowed">
               <LogOut className="mr-2 h-4 w-4" />
               Завершить все
             </Button>
@@ -272,6 +325,7 @@ export function SecuritySettings() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTerminateSession(session.id)}
+                      className="cursor-pointer disabled:cursor-not-allowed"
                     >
                       Завершить
                     </Button>
