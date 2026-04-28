@@ -48,12 +48,13 @@ import {
   streamChatResponse, 
   createChat, 
   getChat, 
+  getChats,
   addMessage,
   type Message,
   type Chat as ChatType,
   type Attachment 
 } from '@/services/ai.service'
-import { models, getModelById, getAvailableModels } from '@/config/models.config'
+import { getModelById, getAvailableModels } from '@/config/models.config'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -127,7 +128,20 @@ function ChatContent() {
   const [currentChat, setCurrentChat] = useState<ChatType | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
-  const [selectedModel, setSelectedModel] = useState(modelParam || 'gpt-4')
+  // Empty string means "no model selected yet". A brand new empty chat at
+  // `/chat` (no `?model=` and no `?id=`) starts with no model selected so
+  // the selector shows the "Выберите модель" placeholder. As soon as the
+  // user picks a model OR they arrived via `?model=…`, this becomes a real
+  // model id. "Выберите модель" is NOT a real selectable option.
+  const [selectedModel, setSelectedModel] = useState(modelParam || '')
+  // Banner state: when set, the chat shows a small in-page prompt asking
+  // whether to open the existing chat for the target model or create a new
+  // one. Only used when the current chat is non-empty AND a chat for the
+  // target model already exists.
+  const [pendingModelSwitch, setPendingModelSwitch] = useState<{
+    targetModelId: string
+    existingChatId: string
+  } | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   // Desktop sidebar open state
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -211,6 +225,11 @@ function ChatContent() {
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() && attachments.length === 0) return
     if (isGenerating) return
+    // Enforce one chat = one model: cannot send before a model is picked.
+    if (!selectedModel) {
+      toast.error('Выберите модель, чтобы отправить сообщение')
+      return
+    }
 
     const userMessage: Message = {
       id: `msg_${Date.now()}`,
@@ -512,9 +531,13 @@ function ChatContent() {
   }
 
   const handleNewChat = () => {
+    // A fresh empty chat must start with no model selected. The selector
+    // will show "Выберите модель" until the user explicitly picks one.
     setCurrentChat(null)
     setMessages([])
-    window.history.pushState({}, '', `/chat?model=${selectedModel}`)
+    setSelectedModel('')
+    setPendingModelSwitch(null)
+    window.history.pushState({}, '', '/chat')
     setIsMobileSidebarOpen(false)
   }
 
@@ -526,8 +549,108 @@ function ChatContent() {
       setMessages(chat.messages)
       setSelectedModel(chat.modelId)
     }
+    // Clear any pending model-switch banner — picking a chat manually is
+    // an explicit user action that supersedes the prompt.
+    setPendingModelSwitch(null)
     setIsMobileSidebarOpen(false)
   }
+
+  /**
+   * Returns the most-recently-updated chat for the given model id, or
+   * undefined if the user has no chat for that model. Used to power the
+   * "Перейти в существующий" action in the model-switch banner.
+   */
+  const findLatestChatForModel = useCallback((modelId: string): ChatType | undefined => {
+    return getChats('current-user')
+      .filter(c => c.modelId === modelId)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0]
+  }, [])
+
+  /**
+   * Central handler for the model selector. Implements the chat-binding
+   * rule: one chat = one model. Behavior depends on the current chat state:
+   *
+   * - Empty chat: just update the selected model in place. The empty-state
+   *   intro will swap to the new model's description. No banner.
+   *
+   * - Non-empty chat + existing chat for the target model: surface a banner
+   *   asking whether to open that existing chat or start a new one. The
+   *   actual model is NOT changed yet — the chat selector visually reverts
+   *   to the current chat's model until the user picks an action.
+   *
+   * - Non-empty chat + no existing chat for the target model: immediately
+   *   open a new (deferred) chat bound to the target model. The unsent
+   *   composer text (`inputValue`) is intentionally preserved.
+   */
+  const handleModelChange = useCallback((newModelId: string) => {
+    if (!newModelId || newModelId === selectedModel) return
+
+    // Empty chat — switching is a no-cost in-place update.
+    if (messages.length === 0) {
+      // Detach from any stale empty chat to keep one chat = one model.
+      // The next sent message will create a fresh chat bound to the new
+      // model. The unused empty chat (if any) stays harmless in storage.
+      setCurrentChat(null)
+      setSelectedModel(newModelId)
+      setPendingModelSwitch(null)
+      window.history.replaceState({}, '', `/chat?model=${newModelId}`)
+      return
+    }
+
+    // Non-empty chat — never silently mutate. Route the user instead.
+    const existing = findLatestChatForModel(newModelId)
+    if (existing) {
+      setPendingModelSwitch({ targetModelId: newModelId, existingChatId: existing.id })
+      return
+    }
+
+    // No existing chat for this model — open a new chat for it now.
+    // Draft text in the composer is preserved across the transition.
+    setCurrentChat(null)
+    setMessages([])
+    setSelectedModel(newModelId)
+    setPendingModelSwitch(null)
+    window.history.pushState({}, '', `/chat?model=${newModelId}`)
+  }, [selectedModel, messages.length, currentChat, findLatestChatForModel])
+
+  /**
+   * Banner action: open the most recent existing chat for the target model.
+   * Draft text in the composer is preserved.
+   */
+  const handleAcceptExistingChat = useCallback(() => {
+    if (!pendingModelSwitch) return
+    const chat = getChat(pendingModelSwitch.existingChatId)
+    if (chat) {
+      window.history.pushState({}, '', `/chat?id=${chat.id}`)
+      setCurrentChat(chat)
+      setMessages(chat.messages)
+      setSelectedModel(chat.modelId)
+    }
+    setPendingModelSwitch(null)
+  }, [pendingModelSwitch])
+
+  /**
+   * Banner action: create a new chat bound to the target model. Selected
+   * model is preserved so the user does not have to pick it again. Draft
+   * text in the composer is preserved.
+   */
+  const handleCreateNewForTargetModel = useCallback(() => {
+    if (!pendingModelSwitch) return
+    const target = pendingModelSwitch.targetModelId
+    setCurrentChat(null)
+    setMessages([])
+    setSelectedModel(target)
+    setPendingModelSwitch(null)
+    window.history.pushState({}, '', `/chat?model=${target}`)
+  }, [pendingModelSwitch])
+
+  /**
+   * Dismiss the banner without action — user keeps reading the current
+   * chat. The model selector stays at the current chat's model.
+   */
+  const handleDismissModelSwitch = useCallback(() => {
+    setPendingModelSwitch(null)
+  }, [])
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none">
@@ -565,9 +688,16 @@ function ChatContent() {
           {isSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
         </Button>
 
-        {/* Model select — only emoji on mobile, full name on sm+ */}
-        <Select value={selectedModel} onValueChange={setSelectedModel}>
-          <SelectTrigger className="w-[120px] cursor-pointer bg-primary/20 border-primary/30 text-xs sm:w-[200px] sm:text-sm">
+        {/* Model select — only emoji on mobile, full name on sm+.
+            Pass `value={undefined}` when no model is selected so the
+            placeholder "Выберите модель" renders. The placeholder is NOT
+            a real dropdown option — it only represents the no-selection
+            state of a fresh empty chat. */}
+        <Select
+          value={selectedModel || undefined}
+          onValueChange={handleModelChange}
+        >
+          <SelectTrigger className="w-[140px] cursor-pointer bg-primary/20 border-primary/30 text-xs sm:w-[220px] sm:text-sm">
             <SelectValue placeholder="Выберите модель">
               {currentModel && (
                 <span className="flex items-center gap-1.5 truncate">
@@ -664,19 +794,90 @@ function ChatContent() {
 
         {/* Main chat area */}
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+          {/* Model-switch banner — surfaced when the user picked a different
+              model in a non-empty chat AND a chat for that target model
+              already exists. Lightweight, in-page, premium-dark styling.
+              Stays inside the chat area so it never overflows the layout
+              on mobile. */}
+          {pendingModelSwitch && (() => {
+            const targetModel = getModelById(pendingModelSwitch.targetModelId)
+            if (!targetModel) return null
+            return (
+              <div className="shrink-0 border-b border-border/30 bg-card/60 backdrop-blur-sm">
+                <div className="mx-auto flex max-w-3xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                  <div className="flex min-w-0 items-start gap-2.5">
+                    <span aria-hidden="true" className="mt-0.5 text-base shrink-0">
+                      {targetModel.emoji}
+                    </span>
+                    <p className="min-w-0 text-sm text-foreground/90 [overflow-wrap:anywhere]">
+                      {`У вас уже есть чат с ${targetModel.name}, хотите перейти в него?`}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end">
+                    <Button
+                      size="sm"
+                      onClick={handleAcceptExistingChat}
+                      className="cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      Перейти в существующий
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCreateNewForTargetModel}
+                      className="cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      Создать новый
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleDismissModelSwitch}
+                      aria-label="Закрыть"
+                      className="h-8 w-8 shrink-0 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Messages area */}
           <div className="scrollbar-hide flex-1 overflow-y-auto overscroll-contain p-4">
             <div className="mx-auto max-w-3xl space-y-6">
               {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <MessageSquare className="h-8 w-8 text-primary" />
+                // Empty state. Two variants:
+                //   1) No model selected → keep the existing generic intro.
+                //   2) Model selected   → swap to a paragraph describing
+                //      what that model is best for. The paragraph variant
+                //      is used for ALL model categories (text/image/audio
+                //      /video/multimodal) — the field is required on every
+                //      model in the config.
+                // Once `messages.length > 0` (first message sent), this
+                // entire block disappears and never returns for that chat.
+                currentModel ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl">
+                      <span aria-hidden="true">{currentModel.emoji}</span>
+                    </div>
+                    <h3 className="text-lg font-medium">{currentModel.name}</h3>
+                    <p className="mt-3 max-w-md text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
+                      {currentModel.useCase}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-medium">Начните диалог</h3>
-                  <p className="mt-2 max-w-sm text-muted-foreground">
-                    Выберите модель и напишите ваш первый запрос. ModelX ответит мгновенно.
-                  </p>
-                </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                      <MessageSquare className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-medium">Начните диалог</h3>
+                    <p className="mt-2 max-w-sm text-muted-foreground">
+                      Выберите модель и напишите ваш первый запрос. ModelX ответит мгновенно.
+                    </p>
+                  </div>
+                )
               ) : (
                 messages.map((message) => {
                   const msgModel = message.modelId ? getModelById(message.modelId) : currentModel
@@ -982,8 +1183,11 @@ function ChatContent() {
                   <Button
                     size="icon"
                     onClick={handleSendMessage}
-                    disabled={!inputValue.trim() && attachments.length === 0}
-                    className="cursor-pointer"
+                    disabled={
+                      !selectedModel ||
+                      (!inputValue.trim() && attachments.length === 0)
+                    }
+                    className="cursor-pointer disabled:cursor-not-allowed"
                   >
                     <Send className="h-5 w-5" />
                   </Button>
