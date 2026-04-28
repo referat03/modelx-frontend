@@ -33,7 +33,7 @@ interface AuthContextType {
   verifyEmail: (otp: string) => Promise<{ success: boolean; error?: string }>
   forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>
   resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
-  updateProfile: (data: Partial<Pick<User, 'name' | 'email'>>) => Promise<{ success: boolean; error?: string }>
+  updateProfile: (data: Partial<Pick<User, 'name' | 'email' | 'avatarUrl'>>) => Promise<{ success: boolean; error?: string }>
   updateTokenBalance: (newBalance: number) => void
   loginWithGoogle: () => Promise<void>
   loginWithTelegram: () => Promise<void>
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateProfile = useCallback(async (
-    data: Partial<Pick<User, 'name' | 'email'>>
+    data: Partial<Pick<User, 'name' | 'email' | 'avatarUrl'>>
   ): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Не авторизован' }
     
