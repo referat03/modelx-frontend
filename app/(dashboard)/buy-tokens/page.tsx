@@ -11,50 +11,72 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
+// Display names for /buy-tokens only. We deliberately do NOT mutate the shared
+// config (it is also consumed by the landing page) — this map is the single
+// source of truth for the renamed titles on this page and inside the purchase
+// confirmation modal.
+const PACKAGE_DISPLAY_NAMES: Record<string, string> = {
+  small: 'Мини',
+  medium: 'Средний',
+  large: 'Большой',
+}
+
+function getDisplayName(pkg: Pick<TokenPackage, 'id' | 'name'>): string {
+  return PACKAGE_DISPLAY_NAMES[pkg.id] ?? pkg.name
+}
+
 interface TokenPackageCardProps {
   pkg: TokenPackage
   onBuy: (pkg: TokenPackage) => void
 }
 
 function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
+  const displayName = getDisplayName(pkg)
+
   return (
-    <Card
-      className={cn(
-        'relative flex h-full flex-col transition-all hover:shadow-lg hover:shadow-primary/10',
-        pkg.isPopular && 'border-primary shadow-lg shadow-primary/20'
-      )}
-    >
-      <CardHeader>
-        {pkg.isPopular && (
-          <div className="mb-2">
-            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-              <Sparkles className="h-3 w-3" />
-              Популярный
-            </span>
-          </div>
-        )}
-        <CardTitle className="text-xl">{pkg.name}</CardTitle>
-      </CardHeader>
-
-      <CardContent className="flex-1">
-        <div className="mb-4 flex items-baseline gap-1">
-          <span className="text-3xl font-bold">{formatTokensPrice(pkg.price)}</span>
+    // Wrapper allows the "Популярный" chip to sit visually above the card
+    // (outside the card body) while remaining anchored to it. pt-3 reserves
+    // space for the floating chip so layout stays balanced on mobile.
+    <div className={cn('relative h-full', pkg.isPopular && 'pt-3')}>
+      {pkg.isPopular && (
+        <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary/40">
+            <Sparkles className="h-3 w-3" />
+            Популярный
+          </span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {pkg.tokens} токенов для использования в чате с AI-моделями
-        </p>
-      </CardContent>
+      )}
 
-      <CardFooter>
-        <Button
-          className="w-full"
-          variant={pkg.isPopular ? 'default' : 'outline'}
-          onClick={() => onBuy(pkg)}
-        >
-          Купить
-        </Button>
-      </CardFooter>
-    </Card>
+      <Card
+        className={cn(
+          'relative flex h-full flex-col transition-all hover:shadow-lg hover:shadow-primary/10',
+          pkg.isPopular && 'border-primary shadow-lg shadow-primary/20'
+        )}
+      >
+        <CardHeader>
+          <CardTitle className="text-xl">{displayName}</CardTitle>
+        </CardHeader>
+
+        <CardContent className="flex-1">
+          <div className="mb-4 flex items-baseline gap-1">
+            <span className="text-3xl font-bold">{formatTokensPrice(pkg.price)}</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {pkg.tokens} токенов для использования в чате с AI-моделями
+          </p>
+        </CardContent>
+
+        <CardFooter>
+          <Button
+            className="w-full cursor-pointer disabled:cursor-not-allowed"
+            variant={pkg.isPopular ? 'default' : 'outline'}
+            onClick={() => onBuy(pkg)}
+          >
+            Купить
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   )
 }
 
@@ -73,6 +95,10 @@ export default function BuyTokensPage() {
     toast.info('Оплата будет доступна позже')
     setSelectedPackage(null)
   }
+
+  // Selected package's display name shown inside the modal — uses the same
+  // mapping as the cards so the names are consistent across the flow.
+  const selectedDisplayName = selectedPackage ? getDisplayName(selectedPackage) : ''
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -99,6 +125,7 @@ export default function BuyTokensPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="h-full"
             >
               <TokenPackageCard pkg={pkg} onBuy={handleBuy} />
             </motion.div>
@@ -116,20 +143,22 @@ export default function BuyTokensPage() {
         </div>
       </motion.div>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog. The Tailwind selector below targets the
+          auto-rendered DialogClose ("X") so it gets a pointer cursor without
+          editing the shared dialog primitive. */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
+        <DialogContent className="[&_[data-slot=dialog-close]]:cursor-pointer">
           <DialogHeader>
             <DialogTitle>Подтверждение покупки</DialogTitle>
             <DialogDescription>
-              Вы собираетесь приобрести пакет &quot;{selectedPackage?.name}&quot;
+              Вы собираетесь приобрести пакет &quot;{selectedDisplayName}&quot;
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Пакет:</span>
-                <span className="font-medium">{selectedPackage?.name}</span>
+                <span className="font-medium">{selectedDisplayName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Количество токенов:</span>
@@ -142,10 +171,17 @@ export default function BuyTokensPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+            <Button
+              variant="outline"
+              className="cursor-pointer disabled:cursor-not-allowed"
+              onClick={() => setShowConfirmDialog(false)}
+            >
               Отмена
             </Button>
-            <Button onClick={handleConfirmPurchase}>
+            <Button
+              className="cursor-pointer disabled:cursor-not-allowed"
+              onClick={handleConfirmPurchase}
+            >
               Подтвердить покупку
             </Button>
           </DialogFooter>
