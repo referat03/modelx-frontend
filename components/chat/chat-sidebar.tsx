@@ -272,10 +272,15 @@ export function ChatSidebar({ currentChatId, onSelectChat, onNewChat }: ChatSide
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingChatId(null)}>Отмена</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={() => setDeletingChatId(null)}
+              className="cursor-pointer disabled:cursor-not-allowed"
+            >
+              Отмена
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirmed}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:cursor-not-allowed"
             >
               Удалить
             </AlertDialogAction>
