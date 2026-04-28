@@ -1,282 +1,348 @@
 'use client'
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { User, Mail, Save, AlertTriangle, Link as LinkIcon, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { useAuth } from '@/contexts/auth-context'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
+import { Pencil, Check, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-const profileSchema = z.object({
-  name: z.string().min(2, 'Имя должно быть не менее 2 символов'),
-  email: z.string().email('Некорректный email'),
-})
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useAuth } from '@/contexts/auth-context'
+import { cn } from '@/lib/utils'
 
-type ProfileFormData = z.infer<typeof profileSchema>
+// 5 preset avatars served from /public/avatars
+const AVATAR_PRESETS = [
+  { id: 'ginger-cat', src: '/avatars/ginger-cat.jpg', label: 'Рыжий кот' },
+  { id: 'spaniel', src: '/avatars/spaniel.jpg', label: 'Спаниель' },
+  { id: 'capybara', src: '/avatars/capybara.jpg', label: 'Капибара' },
+  { id: 'chicken', src: '/avatars/chicken.jpg', label: 'Курица' },
+  { id: 'samoyed', src: '/avatars/samoyed.jpg', label: 'Самоед' },
+] as const
+
+const NAME_MIN = 2
+const NAME_MAX = 60
+
+function getInitials(name: string | undefined | null) {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  const first = parts[0]?.[0] ?? ''
+  const second = parts[1]?.[0] ?? ''
+  return (first + second).toUpperCase() || first.toUpperCase()
+}
+
+function formatRegistrationDate(date: Date | string | undefined) {
+  if (!date) return '—'
+  const d = typeof date === 'string' ? new Date(date) : date
+  if (Number.isNaN(d.getTime())) return '—'
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(d)
+}
 
 export function ProfileSettings() {
-  const { user, updateProfile, isLoading } = useAuth()
-  const [isEditing, setIsEditing] = useState(false)
+  const { user, updateProfile } = useAuth()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isDirty },
-    reset,
-  } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-    },
-  })
+  // ─── Avatar picker ─────────────────────────────────────────────────────────
+  const [avatarOpen, setAvatarOpen] = useState(false)
+  const [savingAvatar, setSavingAvatar] = useState<string | null>(null)
 
-  const onSubmit = async (data: ProfileFormData) => {
-    const result = await updateProfile(data)
-    
-    if (result.success) {
-      toast.success('Профиль обновлён')
-      setIsEditing(false)
+  const handleSelectAvatar = async (src: string) => {
+    if (!user || src === user.avatarUrl || savingAvatar) return
+    setSavingAvatar(src)
+    const res = await updateProfile({ avatarUrl: src })
+    setSavingAvatar(null)
+    if (res.success) {
+      toast.success('Аватар обновлён')
+      setAvatarOpen(false)
     } else {
-      toast.error(result.error || 'Ошибка обновления')
+      toast.error(res.error ?? 'Не удалось обновить аватар')
     }
   }
 
-  const handleCancel = () => {
-    reset({
-      name: user?.name || '',
-      email: user?.email || '',
+  // ─── Inline name edit ──────────────────────────────────────────────────────
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState(user?.name ?? '')
+  const [savingName, setSavingName] = useState(false)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  // Keep the draft in sync if the underlying user changes externally
+  useEffect(() => {
+    if (!isEditingName) setNameDraft(user?.name ?? '')
+  }, [user?.name, isEditingName])
+
+  const startEditingName = () => {
+    setNameDraft(user?.name ?? '')
+    setIsEditingName(true)
+    // Focus on next tick so the input is mounted
+    requestAnimationFrame(() => {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
     })
-    setIsEditing(false)
+  }
+
+  const cancelEditingName = () => {
+    setIsEditingName(false)
+    setNameDraft(user?.name ?? '')
+  }
+
+  const trimmedDraft = nameDraft.trim()
+  const nameValidationError = useMemo(() => {
+    if (trimmedDraft.length < NAME_MIN) return `Минимум ${NAME_MIN} символа`
+    if (trimmedDraft.length > NAME_MAX) return `Максимум ${NAME_MAX} символов`
+    return null
+  }, [trimmedDraft])
+
+  const submitName = async () => {
+    if (!user || savingName) return
+    if (nameValidationError) {
+      toast.error(nameValidationError)
+      return
+    }
+    if (trimmedDraft === user.name) {
+      setIsEditingName(false)
+      return
+    }
+    setSavingName(true)
+    const res = await updateProfile({ name: trimmedDraft })
+    setSavingName(false)
+    if (res.success) {
+      toast.success('Имя обновлено')
+      setIsEditingName(false)
+    } else {
+      toast.error(res.error ?? 'Не удалось обновить имя')
+    }
+  }
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      submitName()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cancelEditingName()
+    }
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+  if (!user) {
+    return (
+      <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
+        <CardContent className="flex items-center justify-center py-16">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <div className="space-y-6">
-      {/* Avatar Section */}
-      <Card>
+      {/* Identity card — avatar + name */}
+      <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle>Фото профиля</CardTitle>
-          <CardDescription>
-            Ваш аватар отображается в чатах и профиле
-          </CardDescription>
+          <CardTitle className="text-xl">Профиль</CardTitle>
+          <CardDescription>Ваш аватар и имя видны в чатах и шапке</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-              <AvatarFallback className="bg-primary/10 text-3xl text-primary">
-                {user?.name?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{user?.name}</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Profile Info Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Личная информация</CardTitle>
-          <CardDescription>
-            Обновите свои личные данные
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Имя</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="name"
-                  placeholder="Ваше имя"
-                  className="pl-10"
-                  disabled={!isEditing}
-                  {...register('name')}
-                />
+        <CardContent className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
+          {/* Avatar with picker */}
+          <Popover open={avatarOpen} onOpenChange={setAvatarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Выбрать аватар"
+                className={cn(
+                  'group relative shrink-0 cursor-pointer rounded-full outline-none ring-offset-background',
+                  'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                )}
+              >
+                <Avatar className="h-24 w-24 border border-border/60 shadow-sm transition-transform duration-200 group-hover:scale-[1.02]">
+                  <AvatarImage src={user.avatarUrl ?? ''} alt={user.name} />
+                  <AvatarFallback className="bg-primary/15 text-xl font-semibold text-primary">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Subtle edit overlay on hover */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-background/55 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+                >
+                  <Pencil className="h-5 w-5 text-foreground" />
+                </span>
+                {/* Always-visible edit badge in the corner */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-sm transition-transform duration-200 group-hover:scale-110"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </span>
+              </button>
+            </PopoverTrigger>
+
+            <PopoverContent
+              align="start"
+              sideOffset={12}
+              className="w-auto max-w-[min(92vw,360px)] border-border/60 bg-popover/95 p-3 backdrop-blur-xl"
+            >
+              <div className="mb-3 px-1">
+                <p className="text-sm font-medium text-foreground">Выберите аватар</p>
+                <p className="text-xs text-muted-foreground">5 готовых вариантов</p>
               </div>
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
-              )}
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  className="pl-10"
-                  disabled={!isEditing}
-                  {...register('email')}
-                />
+              <div className="grid grid-cols-5 gap-2">
+                {AVATAR_PRESETS.map((preset) => {
+                  const isActive = user.avatarUrl === preset.src
+                  const isSaving = savingAvatar === preset.src
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleSelectAvatar(preset.src)}
+                      disabled={!!savingAvatar}
+                      aria-label={preset.label}
+                      aria-pressed={isActive}
+                      title={preset.label}
+                      className={cn(
+                        'group relative aspect-square shrink-0 cursor-pointer overflow-hidden rounded-full',
+                        'outline-none ring-offset-background transition-all duration-200',
+                        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        'disabled:cursor-not-allowed',
+                        isActive
+                          ? 'ring-2 ring-primary ring-offset-2'
+                          : 'ring-1 ring-border/60 hover:scale-[1.04] hover:ring-foreground/40'
+                      )}
+                    >
+                      <Image
+                        src={preset.src}
+                        alt={preset.label}
+                        width={80}
+                        height={80}
+                        className="h-full w-full object-cover"
+                      />
+                      {(isActive || isSaving) && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-0 flex items-center justify-center bg-foreground/35 backdrop-blur-[1px]"
+                        >
+                          {isSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-background" />
+                          ) : (
+                            <Check className="h-4 w-4 text-background" strokeWidth={3} />
+                          )}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
-              {user?.isEmailVerified && (
-                <p className="flex items-center gap-1 text-xs text-green-500">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
-                  Email подтверждён
-                </p>
-              )}
-            </div>
+            </PopoverContent>
+          </Popover>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-4">
-              {isEditing ? (
-                <>
-                  <Button type="submit" disabled={isLoading || !isDirty}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isLoading ? 'Сохранение...' : 'Сохранить'}
+          {/* Name + email block */}
+          <div className="flex w-full min-w-0 flex-col items-center gap-3 sm:items-start">
+            {isEditingName ? (
+              <div className="flex w-full max-w-sm flex-col gap-2">
+                <Label htmlFor="profile-name-input" className="sr-only">
+                  Имя
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="profile-name-input"
+                    ref={nameInputRef}
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={handleNameKeyDown}
+                    maxLength={NAME_MAX + 5}
+                    disabled={savingName}
+                    aria-invalid={!!nameValidationError}
+                    aria-describedby={nameValidationError ? 'profile-name-error' : undefined}
+                    className="h-10 text-lg font-semibold"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={submitName}
+                    disabled={savingName || !!nameValidationError}
+                    aria-label="Сохранить имя"
+                    className="h-10 w-10 shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {savingName ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </Button>
-                  <Button type="button" variant="outline" onClick={handleCancel}>
-                    Отмена
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={cancelEditingName}
+                    disabled={savingName}
+                    aria-label="Отменить"
+                    className="h-10 w-10 shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </Button>
-                </>
-              ) : (
-                <Button type="button" variant="outline" onClick={() => setIsEditing(true)}>
-                  Редактировать
+                </div>
+                {nameValidationError ? (
+                  <p id="profile-name-error" className="text-xs text-destructive">
+                    {nameValidationError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Enter — сохранить, Esc — отменить
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex w-full items-center justify-center gap-2 sm:justify-start">
+                <h2 className="truncate text-2xl font-semibold tracking-tight" title={user.name}>
+                  {user.name}
+                </h2>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={startEditingName}
+                  aria-label="Изменить имя"
+                  className="h-8 w-8 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+                >
+                  <Pencil className="h-4 w-4" aria-hidden="true" />
                 </Button>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Account Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Информация об аккаунте</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-medium">Роль</p>
-              <p className="text-sm text-muted-foreground">
-                {user?.role === 'admin' ? 'Администратор' : user?.role === 'moderator' ? 'Модератор' : 'Пользователь'}
-              </p>
-            </div>
-            {user?.role === 'admin' && (
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                Admin
-              </span>
+              </div>
             )}
-          </div>
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-medium">Дата регистрации</p>
-              <p className="text-sm text-muted-foreground">
-                {user?.createdAt ? new Intl.DateTimeFormat('ru-RU', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                }).format(user.createdAt) : 'N/A'}
-              </p>
-            </div>
+            <p className="truncate text-sm text-muted-foreground" title={user.email}>
+              {user.email}
+            </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Linked Accounts Section */}
-      <Card>
+      {/* Account info card */}
+      <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="h-5 w-5" />
-            Привязанные аккаунты
-          </CardTitle>
-          <CardDescription>
-            Управляйте подключёнными сервисами для быстрого входа
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Google */}
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white">
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium">Google</p>
-                <p className="text-sm text-muted-foreground">Не подключён</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toast.info('Подключение Google будет доступно после интеграции OAuth')}
-            >
-              Подключить
-            </Button>
-          </div>
-
-          {/* Telegram */}
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#26A5E4]">
-                <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium">Telegram</p>
-                <p className="text-sm text-muted-foreground">Не подключён</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => toast.info('Подключение Telegram будет доступно после интеграции Telegram Login')}
-            >
-              Подключить
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="border-rose-800/50">
-        <CardHeader>
-          <CardTitle className="text-destructive">Опасная зона</CardTitle>
-          <CardDescription>
-            Необратимые действия с аккаунтом
-          </CardDescription>
+          <CardTitle className="text-xl">Информация об аккаунте</CardTitle>
+          <CardDescription>Базовые данные вашего аккаунта</CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Удаление аккаунта</AlertTitle>
-            <AlertDescription>
-              После удаления аккаунта все ваши данные будут безвозвратно утеряны.
-            </AlertDescription>
-          </Alert>
-          <Button
-            variant="destructive"
-            className="mt-4"
-            onClick={() => toast.info('Удаление аккаунта будет доступно после интеграции с бэкендом')}
-          >
-            Удалить аккаунт
-          </Button>
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Email</dt>
+              <dd className="break-all text-sm font-medium text-foreground">{user.email}</dd>
+            </div>
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Дата регистрации</dt>
+              <dd className="text-sm font-medium text-foreground">
+                {formatRegistrationDate(user.createdAt)}
+              </dd>
+            </div>
+          </dl>
         </CardContent>
       </Card>
     </div>
