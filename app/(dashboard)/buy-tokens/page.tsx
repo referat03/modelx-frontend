@@ -34,12 +34,15 @@ function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
   const displayName = getDisplayName(pkg)
 
   return (
-    // Wrapper allows the "Популярный" chip to sit visually above the card
-    // (outside the card body) while remaining anchored to it. pt-3 reserves
-    // space for the floating chip so layout stays balanced on mobile.
-    <div className={cn('relative h-full', pkg.isPopular && 'pt-3')}>
+    // Wrapper reserves a consistent top "badge slot" on EVERY card (not only
+    // the popular one) so all three card bodies start at the same vertical
+    // position and the row reads as one clean grid. The chip is absolutely
+    // positioned inside that reserved slot so it always sits fully above the
+    // card with a small clean gap — never overlapping the card border, never
+    // pushing internal content down.
+    <div className="relative h-full pt-7">
       {pkg.isPopular && (
-        <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
+        <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2">
           <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm shadow-primary/30 ring-1 ring-primary/40">
             <Sparkles className="h-3 w-3" />
             Популярный
