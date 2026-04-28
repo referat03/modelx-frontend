@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,10 +21,15 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 
+const RESEND_COOLDOWN_SECONDS = 60
+
 export default function ForgotPasswordPage() {
   const { forgotPassword, isLoading } = useAuth()
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [email, setEmail] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const [isResending, setIsResending] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const {
     register,
@@ -37,17 +42,62 @@ export default function ForgotPasswordPage() {
     },
   })
 
+  // Frontend-only resend cooldown timer.
+  // NOTE: This is purely a UX safeguard against accidental spam clicks.
+  // It is NOT secure rate limiting — backend throttling should be added separately.
+  const startCooldown = () => {
+    setCooldown(RESEND_COOLDOWN_SECONDS)
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
+
   const onSubmit = async (data: ForgotPasswordFormData) => {
     const result = await forgotPassword(data.email)
-    
+
     if (result.success) {
       setEmail(data.email)
       setIsSubmitted(true)
+      startCooldown()
       toast.success('Инструкции отправлены на вашу почту')
     } else {
       toast.error(result.error || 'Ошибка отправки')
     }
   }
+
+  const handleResend = async () => {
+    if (cooldown > 0 || isResending || !email) return
+    setIsResending(true)
+    try {
+      const result = await forgotPassword(email)
+      if (result.success) {
+        startCooldown()
+        toast.success('Инструкции отправлены повторно')
+      } else {
+        toast.error(result.error || 'Ошибка отправки')
+      }
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  const resendDisabled = cooldown > 0 || isResending
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
@@ -102,7 +152,11 @@ export default function ForgotPasswordPage() {
                   </div>
 
                   {/* Submit Button */}
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full cursor-pointer disabled:cursor-not-allowed"
+                    disabled={isLoading}
+                  >
                     {isLoading ? 'Отправка...' : 'Отправить инструкции'}
                   </Button>
                 </form>
@@ -127,7 +181,7 @@ export default function ForgotPasswordPage() {
                 <CardTitle className="text-2xl">Проверьте почту</CardTitle>
                 <CardDescription>
                   Мы отправили инструкции по восстановлению пароля на{' '}
-                  <span className="font-medium text-foreground">{email}</span>
+                  <span className="font-medium text-foreground break-all">{email}</span>
                 </CardDescription>
               </CardHeader>
 
@@ -136,10 +190,16 @@ export default function ForgotPasswordPage() {
                   Не получили письмо? Проверьте папку «Спам» или{' '}
                   <button
                     type="button"
-                    onClick={() => setIsSubmitted(false)}
-                    className="text-primary hover:underline"
+                    onClick={handleResend}
+                    disabled={resendDisabled}
+                    aria-disabled={resendDisabled}
+                    className="text-primary hover:underline disabled:no-underline disabled:opacity-60 disabled:hover:no-underline cursor-pointer disabled:cursor-not-allowed"
                   >
-                    отправьте повторно
+                    {cooldown > 0
+                      ? `отправить повторно через ${cooldown} сек`
+                      : isResending
+                      ? 'отправляем...'
+                      : 'отправьте повторно'}
                   </button>
                 </p>
               </CardContent>

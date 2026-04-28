@@ -17,10 +17,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { useAuth } from '@/contexts/auth-context'
 
+// Allowed password characters: Latin letters, digits, and common English-keyboard symbols.
+// Cyrillic characters are explicitly disallowed.
+const PASSWORD_ALLOWED_REGEX = /^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]+$/
+
 const signupSchema = z.object({
   name: z.string().min(2, 'Имя должно быть не менее 2 символов'),
   email: z.string().email('Некорректный email'),
-  password: z.string().min(8, 'Пароль должен быть не менее 8 символов'),
+  password: z
+    .string()
+    .min(6, 'Пароль должен содержать минимум 6 символов.')
+    .refine(
+      (val) => PASSWORD_ALLOWED_REGEX.test(val),
+      'В пароле можно использовать только английские буквы, цифры и допустимые символы.',
+    )
+    .refine(
+      (val) => /[A-Za-z]/.test(val) && /[0-9]/.test(val),
+      'Пароль должен содержать хотя бы 1 английскую букву и 1 цифру.',
+    ),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Пароли не совпадают',
@@ -235,7 +249,7 @@ function SignupForm() {
                     {/* Submit Button */}
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full cursor-pointer disabled:cursor-not-allowed"
                       disabled={isLoading}
                       aria-busy={isLoading}
                     >
@@ -263,7 +277,7 @@ function SignupForm() {
 
                   {/* Social Login */}
                   <div className="grid gap-3">
-                    <Button variant="outline" onClick={loginWithGoogle} className="w-full">
+                    <Button variant="outline" onClick={loginWithGoogle} className="w-full cursor-pointer disabled:cursor-not-allowed">
                       <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                         <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -272,7 +286,7 @@ function SignupForm() {
                       </svg>
                       Google
                     </Button>
-                    <Button variant="outline" onClick={loginWithTelegram} className="w-full">
+                    <Button variant="outline" onClick={loginWithTelegram} className="w-full cursor-pointer disabled:cursor-not-allowed">
                       <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                       </svg>
