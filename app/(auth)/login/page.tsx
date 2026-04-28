@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Sparkles, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff, Sparkles, Mail, Lock, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -78,7 +78,12 @@ function LoginForm() {
           <span className="text-2xl font-bold tracking-tight">ModelX</span>
         </Link>
 
-        <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
+        <Card
+          aria-busy={isLoading}
+          className={`border-border/50 bg-card/50 backdrop-blur-xl transition-opacity duration-300 ${
+            isLoading ? 'pointer-events-none opacity-70' : ''
+          }`}
+        >
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Вход в аккаунт</CardTitle>
             <CardDescription>
@@ -149,8 +154,21 @@ function LoginForm() {
               </div>
 
               {/* Submit Button */}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Вход...' : 'Войти'}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                aria-busy={isLoading}
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Loader2
+                    aria-hidden="true"
+                    className={`h-4 w-4 animate-spin transition-opacity duration-200 ${
+                      isLoading ? 'opacity-100' : 'sr-only opacity-0'
+                    }`}
+                  />
+                  <span>{isLoading ? 'Входим...' : 'Войти'}</span>
+                </span>
               </Button>
             </form>
 

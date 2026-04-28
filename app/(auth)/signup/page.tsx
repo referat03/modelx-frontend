@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Sparkles, Mail, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, Sparkles, Mail, Lock, User, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -114,7 +114,12 @@ function SignupForm() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="border-border/50 bg-card/50 backdrop-blur-xl">
+              <Card
+                aria-busy={isLoading}
+                className={`border-border/50 bg-card/50 backdrop-blur-xl transition-opacity duration-300 ${
+                  isLoading ? 'pointer-events-none opacity-70' : ''
+                }`}
+              >
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl">Создать аккаунт</CardTitle>
                   <CardDescription>
@@ -228,8 +233,21 @@ function SignupForm() {
                     </p>
 
                     {/* Submit Button */}
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Регистрация...' : 'Создать аккаунт'}
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isLoading}
+                      aria-busy={isLoading}
+                    >
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Loader2
+                          aria-hidden="true"
+                          className={`h-4 w-4 animate-spin transition-opacity duration-200 ${
+                            isLoading ? 'opacity-100' : 'sr-only opacity-0'
+                          }`}
+                        />
+                        <span>{isLoading ? 'Создаём аккаунт...' : 'Создать аккаунт'}</span>
+                      </span>
                     </Button>
                   </form>
 
