@@ -303,7 +303,7 @@ function SignupForm() {
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl">Подтвердите email</CardTitle>
                   <CardDescription>
-                    Мы отправили 6-значный код ��а вашу почту
+                    Мы отправили 6-значный код на вашу почту
                   </CardDescription>
                 </CardHeader>
 
@@ -331,7 +331,7 @@ function SignupForm() {
 
                   <Button
                     onClick={handleVerifyEmail}
-                    className="w-full"
+                    className="w-full cursor-pointer disabled:cursor-not-allowed"
                     disabled={isLoading || otp.length !== 6}
                   >
                     {isLoading ? 'Проверка...' : 'Подтвердить'}
@@ -341,7 +341,7 @@ function SignupForm() {
                     <button
                       type="button"
                       onClick={() => toast.info('Код отправлен повторно')}
-                      className="text-sm text-primary hover:underline"
+                      className="cursor-pointer text-sm text-primary hover:underline"
                     >
                       Отправить код повторно
                     </button>
@@ -352,7 +352,7 @@ function SignupForm() {
                   <button
                     type="button"
                     onClick={() => setStep('signup')}
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="cursor-pointer text-sm text-muted-foreground hover:text-foreground"
                   >
                     Назад к регистрации
                   </button>
