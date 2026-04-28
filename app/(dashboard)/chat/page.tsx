@@ -32,7 +32,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Select,
   SelectContent,
@@ -873,7 +873,18 @@ function ChatContent() {
                       </div>
 
                       {message.role === 'user' && (
+                        // Reads the same shared user state that /profile updates,
+                        // so changing the avatar there is reflected here automatically.
+                        // AvatarImage handles fit/cover; AvatarFallback only renders
+                        // when no avatarUrl is set or the image fails to load.
                         <Avatar className="h-8 w-8 shrink-0">
+                          {user?.avatarUrl && (
+                            <AvatarImage
+                              src={user.avatarUrl}
+                              alt={user.name || 'User'}
+                              className="object-cover"
+                            />
+                          )}
                           <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
                             {user?.name?.charAt(0).toUpperCase() || 'U'}
                           </AvatarFallback>
