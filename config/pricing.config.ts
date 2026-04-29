@@ -1,5 +1,13 @@
 // Конфигурация тарифных планов для ModelX
 // TODO: Интегрировать с платежной системой (Stripe, ЮKassa и т.д.)
+//
+// SINGLE SOURCE OF TRUTH for tariffs.
+// Every UI surface that renders tariff cards must consume `pricingPlans`
+// from this file directly: landing pricing section, profile subscription
+// settings, dashboard subscription panel, profile token-balance view,
+// admin pricing editor, and any future surface. Do NOT copy these
+// objects, do NOT hardcode plan names, prices, descriptions, features,
+// or limits anywhere else. Editing this file must propagate everywhere.
 
 export interface PricingPlan {
   id: string

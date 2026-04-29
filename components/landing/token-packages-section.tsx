@@ -42,8 +42,10 @@ function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
         <div className="mb-4 flex items-baseline gap-1">
           <span className="text-3xl font-bold">{formatTokensPrice(pkg.price)}</span>
         </div>
+        {/* Description comes from the shared `tokenPackages` config so this
+            card stays in sync with /buy-tokens and the purchase modal. */}
         <p className="text-sm text-muted-foreground">
-          {pkg.tokens} токенов для использования в чате с AI-моделями
+          {pkg.description}
         </p>
       </CardContent>
 

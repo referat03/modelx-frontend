@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -62,6 +62,37 @@ export function SecuritySettings() {
   // password is NOT changed here — change happens only after the user clicks
   // the link in the confirmation email (real flow handled by backend).
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false)
+  // Frontend-only cooldown for the "Отправить ещё раз" button. Seconds
+  // remaining until the user can request another confirmation email.
+  // This is purely a UX safeguard against accidental spam-clicking — it is
+  // NOT secure backend rate limiting. Real throttling will be added on the
+  // backend later.
+  const RESEND_COOLDOWN_SECONDS = 60
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Drive the countdown. The interval is cleared as soon as the timer reaches
+  // 0 OR the component unmounts, so we never leak timers between mounts of
+  // the security tab.
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current)
+        cooldownIntervalRef.current = null
+      }
+      return
+    }
+    if (cooldownIntervalRef.current) return
+    cooldownIntervalRef.current = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1))
+    }, 1000)
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current)
+        cooldownIntervalRef.current = null
+      }
+    }
+  }, [resendCooldown])
 
   const {
     register,
@@ -87,18 +118,29 @@ export function SecuritySettings() {
 
     setIsChangingPassword(false)
     setEmailConfirmationSent(true)
+    // Start cooldown immediately on the first send so the user cannot
+    // spam-resend right after submitting.
+    setResendCooldown(RESEND_COOLDOWN_SECONDS)
     reset()
     toast.success('Письмо для подтверждения отправлено')
   }
 
   const handleResendConfirmation = async () => {
+    // Guard: do nothing if we're still inside the cooldown window. The button
+    // is also visually disabled, but this guards against keyboard activation
+    // edge cases.
+    if (resendCooldown > 0 || isChangingPassword) return
     setIsChangingPassword(true)
     await new Promise(resolve => setTimeout(resolve, 600))
     setIsChangingPassword(false)
+    setResendCooldown(RESEND_COOLDOWN_SECONDS)
     toast.success('Письмо отправлено повторно')
   }
 
   const handleStartOver = () => {
+    // Returning to the form does NOT reset the cooldown, so users cannot
+    // bypass it by toggling back and forth. The cooldown will simply expire
+    // in the background.
     setEmailConfirmationSent(false)
   }
 
@@ -145,11 +187,15 @@ export function SecuritySettings() {
                 <Button
                   variant="outline"
                   onClick={handleResendConfirmation}
-                  disabled={isChangingPassword}
+                  disabled={isChangingPassword || resendCooldown > 0}
                   aria-busy={isChangingPassword}
                   className="cursor-pointer disabled:cursor-not-allowed"
                 >
-                  {isChangingPassword ? 'Отправка...' : 'Отправить ещё раз'}
+                  {isChangingPassword
+                    ? 'Отправка...'
+                    : resendCooldown > 0
+                      ? `Отправить повторно через ${resendCooldown} сек`
+                      : 'Отправить ещё раз'}
                 </Button>
                 <Button
                   variant="ghost"

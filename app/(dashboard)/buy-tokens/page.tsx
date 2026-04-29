@@ -11,28 +11,15 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
-// Display names for /buy-tokens only. We deliberately do NOT mutate the shared
-// config (it is also consumed by the landing page) — this map is the single
-// source of truth for the renamed titles on this page and inside the purchase
-// confirmation modal.
-const PACKAGE_DISPLAY_NAMES: Record<string, string> = {
-  small: 'Мини',
-  medium: 'Средний',
-  large: 'Большой',
-}
-
-function getDisplayName(pkg: Pick<TokenPackage, 'id' | 'name'>): string {
-  return PACKAGE_DISPLAY_NAMES[pkg.id] ?? pkg.name
-}
-
 interface TokenPackageCardProps {
   pkg: TokenPackage
   onBuy: (pkg: TokenPackage) => void
 }
 
+// Names, prices, token amounts and descriptions all come straight from the
+// shared `tokenPackages` config (single source of truth). This card no
+// longer keeps any per-page overrides.
 function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
-  const displayName = getDisplayName(pkg)
-
   return (
     // Wrapper reserves a consistent top "badge slot" on EVERY card (not only
     // the popular one) so all three card bodies start at the same vertical
@@ -57,7 +44,7 @@ function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
         )}
       >
         <CardHeader>
-          <CardTitle className="text-xl">{displayName}</CardTitle>
+          <CardTitle className="text-xl">{pkg.name}</CardTitle>
         </CardHeader>
 
         <CardContent className="flex-1">
@@ -65,7 +52,7 @@ function TokenPackageCard({ pkg, onBuy }: TokenPackageCardProps) {
             <span className="text-3xl font-bold">{formatTokensPrice(pkg.price)}</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {pkg.tokens} токенов для использования в чате с AI-моделями
+            {pkg.description}
           </p>
         </CardContent>
 
@@ -98,10 +85,6 @@ export default function BuyTokensPage() {
     toast.info('Оплата будет доступна позже')
     setSelectedPackage(null)
   }
-
-  // Selected package's display name shown inside the modal — uses the same
-  // mapping as the cards so the names are consistent across the flow.
-  const selectedDisplayName = selectedPackage ? getDisplayName(selectedPackage) : ''
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -154,14 +137,14 @@ export default function BuyTokensPage() {
           <DialogHeader>
             <DialogTitle>Подтверждение покупки</DialogTitle>
             <DialogDescription>
-              Вы собираетесь приобрести пакет &quot;{selectedDisplayName}&quot;
+              Вы собираетесь приобрести пакет &quot;{selectedPackage?.name}&quot;
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Пакет:</span>
-                <span className="font-medium">{selectedDisplayName}</span>
+                <span className="font-medium">{selectedPackage?.name}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Количество токенов:</span>

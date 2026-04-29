@@ -39,6 +39,7 @@ export default function AdminTokensPage() {
   const [formData, setFormData] = useState({
     id: "",
     name: "",
+    description: "",
     tokens: 100,
     price: 199,
     isPopular: false,
@@ -56,6 +57,7 @@ export default function AdminTokensPage() {
     setFormData({
       id: "",
       name: "",
+      description: "",
       tokens: 100,
       price: 199,
       isPopular: false,
@@ -72,6 +74,7 @@ export default function AdminTokensPage() {
     setFormData({
       id: pkg.id,
       name: pkg.name,
+      description: pkg.description,
       tokens: pkg.tokens,
       price: pkg.price,
       isPopular: pkg.isPopular || false,
@@ -89,6 +92,7 @@ export default function AdminTokensPage() {
     const newPackage: TokenPackage = {
       id: formData.id,
       name: formData.name,
+      description: formData.description,
       tokens: formData.tokens,
       price: formData.price,
       isPopular: formData.isPopular,
@@ -260,6 +264,16 @@ export default function AdminTokensPage() {
                   placeholder="500 токенов"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Описание</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="500 токенов для использования в чате с AI-моделями"
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">

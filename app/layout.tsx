@@ -52,11 +52,26 @@ export default function RootLayout({
           <div className="relative z-10">
             {children}
           </div>
-          <Toaster 
-            theme="dark" 
+          {/*
+            Global Sonner Toaster.
+            - duration: 4000 ensures every toast auto-dismisses on desktop AND
+              mobile after ~4s, instead of waiting for a manual swipe.
+            - The wrapper gets `pointer-events: none` so empty space inside the
+              top-right notification region never blocks clicks on the page
+              behind it. Each individual toast card re-enables pointer events
+              via `toastOptions.style.pointerEvents = 'auto'` so it can still
+              be hovered, swiped, or clicked when actually visible.
+            - All non-blocking behavior is purely a layering/timing fix; the
+              visual identity, position and styling of the toasts is unchanged.
+          */}
+          <Toaster
+            theme="dark"
             position="top-right"
+            duration={4000}
+            style={{ pointerEvents: 'none' }}
             toastOptions={{
               style: {
+                pointerEvents: 'auto',
                 background: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 color: 'hsl(var(--foreground))',

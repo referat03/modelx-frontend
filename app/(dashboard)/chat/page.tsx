@@ -796,15 +796,26 @@ function ChatContent() {
         <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Model-switch banner — surfaced when the user picked a different
               model in a non-empty chat AND a chat for that target model
-              already exists. Lightweight, in-page, premium-dark styling.
-              Stays inside the chat area so it never overflows the layout
-              on mobile. */}
+              already exists.
+
+              IMPORTANT (overlay behavior):
+              The banner is positioned ABSOLUTELY over the top of the chat
+              area, NOT inserted into the document flow. This guarantees the
+              chat messages never shift downward when the banner appears or
+              disappears — the messages list keeps its scroll position and
+              its visible top edge intact.
+
+              The wrapper itself is `pointer-events-none` so empty horizontal
+              space around the floating card does not block taps on the
+              messages underneath. The card itself re-enables pointer events
+              with `pointer-events-auto` so its buttons remain fully usable.
+              Lightweight, in-page, premium-dark styling — never a modal. */}
           {pendingModelSwitch && (() => {
             const targetModel = getModelById(pendingModelSwitch.targetModelId)
             if (!targetModel) return null
             return (
-              <div className="shrink-0 border-b border-border/30 bg-card/60 backdrop-blur-sm">
-                <div className="mx-auto flex max-w-3xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-2 pt-2 sm:px-3 sm:pt-3">
+                <div className="pointer-events-auto mx-auto flex max-w-3xl flex-col gap-3 rounded-lg border border-border/40 bg-card/85 px-3 py-3 shadow-lg shadow-background/40 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4">
                   <div className="flex min-w-0 items-start gap-2.5">
                     <span aria-hidden="true" className="mt-0.5 text-base shrink-0">
                       {targetModel.emoji}
@@ -1005,7 +1016,7 @@ function ChatContent() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    className="h-7 w-7 cursor-pointer text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5 disabled:cursor-not-allowed"
                                     onClick={() => handleVersionChange(message.id, 'prev')}
                                     disabled={versionIndex === 0}
                                     aria-label="Предыдущая версия"
@@ -1018,7 +1029,7 @@ function ChatContent() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    className="h-7 w-7 cursor-pointer text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5 disabled:cursor-not-allowed"
                                     onClick={() => handleVersionChange(message.id, 'next')}
                                     disabled={versionIndex === versions!.length - 1}
                                     aria-label="Следующая версия"
@@ -1031,7 +1042,7 @@ function ChatContent() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                className="h-7 w-7 cursor-pointer text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5 disabled:cursor-not-allowed"
                                 onClick={() => handleRegenerate(message.id)}
                                 disabled={isGenerating}
                                 aria-label="Регенерировать ответ"
@@ -1045,7 +1056,7 @@ function ChatContent() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    className="h-7 w-7 cursor-pointer text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5 disabled:cursor-not-allowed"
                                     onClick={() => handleCopyMessage(message)}
                                     aria-label={isCopied ? 'Скопировано' : 'Скопировать ответ'}
                                     title={isCopied ? 'Скопировано' : 'Скопировать'}
@@ -1059,7 +1070,7 @@ function ChatContent() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                                    className="h-7 w-7 cursor-pointer text-muted-foreground/70 hover:text-foreground hover:bg-foreground/5 disabled:cursor-not-allowed"
                                     onClick={() => handleShareMessage(message)}
                                     aria-label="Поделиться ответом"
                                     title="Поделиться"
